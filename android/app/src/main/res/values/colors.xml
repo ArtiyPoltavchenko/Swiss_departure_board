@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget background -->
+    <color name="widgetBackground">#1a1a2e</color>
+    <color name="widgetSurface">#16213e</color>
+    <color name="widgetDivider">#2a2a4a</color>
+
+    <!-- Text colors -->
+    <color name="widgetTextPrimary">#FFFFFFFF</color>
+    <color name="widgetTextSecondary">#99FFFFFF</color>
+    <color name="widgetCountdown">#ffd700</color>
+    <color name="widgetDepartingNow">#66FF99</color>
+
+    <!-- Line badge colors (same as Flutter app) -->
+    <color name="badgeTram">#e20000</color>
+    <color name="badgeBus">#0063b6</color>
+    <color name="badgeTrain">#333333</color>
+    <color name="badgeShip">#00857c</color>
+    <color name="badgeCableway">#8b5e3c</color>
+    <color name="badgeDefault">#666666</color>
+</resources>

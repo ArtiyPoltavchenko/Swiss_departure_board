@@ -1,0 +1,57 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Tableau des départs",
+  "loading": "Chargement...",
+  "noConnection": "Pas de connexion internet",
+  "locationDenied": "Accès à la localisation refusé",
+  "locationDisabled": "Services de localisation désactivés",
+  "locationTimeout": "Impossible de déterminer votre position. Veuillez réessayer.",
+  "noStopsFound": "Aucun arrêt trouvé à proximité.",
+  "retry": "Réessayer",
+  "openSettings": "Ouvrir les paramètres",
+  "openLocationSettings": "Ouvrir les paramètres de localisation",
+  "settingsTitle": "Paramètres",
+  "departureCount": "Nombre de départs",
+  "language": "Langue",
+  "refreshInterval": "Mise à jour automatique",
+  "seconds": "{n} secondes",
+  "@seconds": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "minutes": "{n} min",
+  "@minutes": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "departingNow": "Maintenant",
+  "updatedAgo": "Mis à jour il y a {n}s",
+  "@updatedAgo": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "nearbyStops": "Arrêts à proximité",
+  "noDepartures": "Aucun départ disponible.",
+  "disruption": "Perturbation",
+  "checkSbb": "Voir l'app CFF pour les détails",
+  "about": "À propos",
+  "dataSource": "Données : transport.opendata.ch",
+  "platform": "Voie",
+  "langDe": "Deutsch",
+  "langFr": "Français",
+  "langIt": "Italiano",
+  "langEn": "English",
+  "offlineDataFrom": "Hors ligne — dernières données de {time}",
+  "@offlineDataFrom": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "searchStopTitle": "Rechercher un arrêt",
+  "searchStopHint": "Rechercher...",
+  "noSearchResults": "Aucun arrêt trouvé",
+  "usingLastLocation": "Utilisation de la dernière position connue"
+}

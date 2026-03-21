@@ -1,0 +1,57 @@
+{
+  "@@locale": "en",
+  "appTitle": "Departure Board",
+  "loading": "Loading...",
+  "noConnection": "No internet connection",
+  "locationDenied": "Location access denied",
+  "locationDisabled": "Location services disabled",
+  "locationTimeout": "Could not determine your location. Please try again.",
+  "noStopsFound": "No stops found near your location.",
+  "retry": "Retry",
+  "openSettings": "Open Settings",
+  "openLocationSettings": "Open Location Settings",
+  "settingsTitle": "Settings",
+  "departureCount": "Number of departures",
+  "language": "Language",
+  "refreshInterval": "Auto-refresh",
+  "seconds": "{n} seconds",
+  "@seconds": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "minutes": "{n} min",
+  "@minutes": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "departingNow": "Now",
+  "updatedAgo": "Updated {n}s ago",
+  "@updatedAgo": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "nearbyStops": "Nearby stops",
+  "noDepartures": "No departures available.",
+  "disruption": "Disruption",
+  "checkSbb": "Check SBB app for details",
+  "about": "About",
+  "dataSource": "Data: transport.opendata.ch",
+  "platform": "Platform",
+  "langDe": "Deutsch",
+  "langFr": "Français",
+  "langIt": "Italiano",
+  "langEn": "English",
+  "offlineDataFrom": "Offline — last data from {time}",
+  "@offlineDataFrom": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "searchStopTitle": "Search for a stop",
+  "searchStopHint": "Search...",
+  "noSearchResults": "No stops found",
+  "usingLastLocation": "Using last known location"
+}

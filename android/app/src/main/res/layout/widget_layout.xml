@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Home screen widget layout for Swiss Departure Board.
+  Uses only RemoteViews-compatible views: LinearLayout, RelativeLayout, TextView, ImageView.
+  Category-specific badge colors are applied programmatically in HomeWidgetProvider.kt.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_background"
+    android:padding="12dp">
+
+    <!-- ── Header: stop name + refresh button ──────────────────────────── -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="32dp"
+        android:layout_marginBottom="4dp">
+
+        <TextView
+            android:id="@+id/widget_stop_name"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            android:layout_toStartOf="@+id/widget_refresh_btn"
+            android:gravity="center_vertical"
+            android:text="@string/widget_stop_loading"
+            android:textColor="@color/widgetTextPrimary"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <ImageView
+            android:id="@+id/widget_refresh_btn"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_widget_refresh"
+            android:contentDescription="Refresh" />
+    </RelativeLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/widgetDivider"
+        android:layout_marginBottom="2dp" />
+
+    <!-- ── Departure row 0 ──────────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/widget_row_0"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_line_0"
+            android:layout_width="38dp"
+            android:layout_height="22dp"
+            android:gravity="center"
+            android:background="@drawable/line_badge_bg"
+            android:textColor="@color/widgetTextPrimary"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/widget_dest_0"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:textColor="@color/widgetTextPrimary"
+            android:textSize="13sp"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_time_0"
+            android:layout_width="52dp"
+            android:layout_height="wrap_content"
+            android:gravity="end|center_vertical"
+            android:textColor="@color/widgetCountdown"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <!-- ── Departure row 1 ──────────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/widget_row_1"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_line_1"
+            android:layout_width="38dp"
+            android:layout_height="22dp"
+            android:gravity="center"
+            android:background="@drawable/line_badge_bg"
+            android:textColor="@color/widgetTextPrimary"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/widget_dest_1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:textColor="@color/widgetTextPrimary"
+            android:textSize="13sp"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_time_1"
+            android:layout_width="52dp"
+            android:layout_height="wrap_content"
+            android:gravity="end|center_vertical"
+            android:textColor="@color/widgetCountdown"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <!-- ── Departure row 2 ──────────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/widget_row_2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_line_2"
+            android:layout_width="38dp"
+            android:layout_height="22dp"
+            android:gravity="center"
+            android:background="@drawable/line_badge_bg"
+            android:textColor="@color/widgetTextPrimary"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/widget_dest_2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:textColor="@color/widgetTextPrimary"
+            android:textSize="13sp"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_time_2"
+            android:layout_width="52dp"
+            android:layout_height="wrap_content"
+            android:gravity="end|center_vertical"
+            android:textColor="@color/widgetCountdown"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <!-- ── Departure row 3 ──────────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/widget_row_3"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_line_3"
+            android:layout_width="38dp"
+            android:layout_height="22dp"
+            android:gravity="center"
+            android:background="@drawable/line_badge_bg"
+            android:textColor="@color/widgetTextPrimary"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/widget_dest_3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:textColor="@color/widgetTextPrimary"
+            android:textSize="13sp"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_time_3"
+            android:layout_width="52dp"
+            android:layout_height="wrap_content"
+            android:gravity="end|center_vertical"
+            android:textColor="@color/widgetCountdown"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:singleLine="true" />
+    </LinearLayout>
+
+</LinearLayout>
