@@ -4,6 +4,21 @@ All notable changes to Swiss Departure Board.
 
 Format: [Semantic Versioning](https://semver.org/)
 
+## 0.3.0 — Minimal UI (2026-03-21)
+- BoardScreen: geolocation → nearby stops → departure board flow
+- Loading / error / data states with typed error messages
+- Permission denied: button to open app settings (Geolocator.openAppSettings)
+- Location disabled: button to open location settings
+- API error: retry button
+- StopSelector dropdown (shown only when ≥ 2 stops)
+- DepartureTile: line badge (category-colored) + destination + countdown
+- CountdownChip: "N min" or departing-now walk icon
+- Auto-refresh every 30 s (Timer.periodic, cancelled on dispose)
+- Pull-to-refresh via RefreshIndicator
+- "Updated X s ago" header label
+- Last selected stop persisted and restored on next launch
+- version.dart bumped to 0.3.0
+
 ## 0.2.0 — Core Logic (2026-03-21)
 - Models: Stop, Departure, Disruption with full fromJson / toJson
 - Departure computed getters: minutesUntil, isDeparting

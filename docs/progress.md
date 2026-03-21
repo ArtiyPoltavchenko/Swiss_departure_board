@@ -21,14 +21,14 @@
 - [x] Unit tests: models (9 tests), services (8 tests) — 17 total
 - [x] All tests written (require `flutter test` to verify)
 
-## Phase 3 — Minimal UI
-- [ ] BoardScreen: location → stops → departures flow
-- [ ] DepartureTile: line badge + destination + countdown
-- [ ] CountdownChip: minutes or "departing" icon
-- [ ] StopSelector: dropdown for nearby stops
-- [ ] Auto-refresh (30s timer)
-- [ ] Pull-to-refresh
-- [ ] Loading/error states
+## Phase 3 — Minimal UI ✅
+- [x] BoardScreen: location → stops → departures flow
+- [x] DepartureTile: line badge + destination + countdown
+- [x] CountdownChip: minutes or "departing" icon
+- [x] StopSelector: dropdown for nearby stops
+- [x] Auto-refresh (30s timer)
+- [x] Pull-to-refresh
+- [x] Loading/error states
 
 ## Phase 4 — Full UI
 - [ ] Dark Swiss theme applied

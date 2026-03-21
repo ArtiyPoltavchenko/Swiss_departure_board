@@ -3,4 +3,4 @@
 /// MAJOR - breaking change
 /// MINOR - new feature
 /// PATCH - bugfix
-const String appVersion = '0.2.0';
+const String appVersion = '0.3.0';
