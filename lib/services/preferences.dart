@@ -13,6 +13,7 @@ abstract final class _Keys {
   static const lastStop = 'last_stop';
   static const departureCount = 'departure_count';
   static const locale = 'locale';
+  static const refreshInterval = 'refresh_interval';
 }
 
 /// Wrapper around SharedPreferences for app settings and last-used stop.
@@ -65,5 +66,19 @@ class Preferences {
   Future<void> saveLocale(String locale) async {
     final prefs = await _prefs;
     await prefs.setString(_Keys.locale, locale);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Auto-refresh interval
+  // ---------------------------------------------------------------------------
+
+  Future<int> loadRefreshInterval() async {
+    final prefs = await _prefs;
+    return prefs.getInt(_Keys.refreshInterval) ?? 30;
+  }
+
+  Future<void> saveRefreshInterval(int seconds) async {
+    final prefs = await _prefs;
+    await prefs.setInt(_Keys.refreshInterval, seconds);
   }
 }

@@ -40,3 +40,13 @@
 **Date:** 2026-03-21
 **Decision:** API tests use a custom `_MockAdapter` implementing `HttpClientAdapter`.
 **Rationale:** mockito 5.x requires `build_runner` to generate mock classes. Since the generated files are excluded from git and the CI environment has no Flutter toolchain, a hand-written adapter is simpler, requires no code generation, and tests the exact same code paths.
+
+## ADR-009: Dark-only theme — matches physical departure board aesthetic
+**Date:** 2026-03-21
+**Decision:** Single dark theme only (#1a1a2e background).
+**Rationale:** Real Swiss SBB departure boards use dark backgrounds with high-contrast text. A single theme halves design and testing work, improves OLED battery life, and gives a consistent brand feel. A light theme option can be added in a future version if users request it.
+
+## ADR-010: ConsumerWidget for App root — live locale switching
+**Date:** 2026-03-21
+**Decision:** App widget extends ConsumerWidget and watches settingsProvider for the locale.
+**Rationale:** Flutter's MaterialApp.locale is respected at runtime. By watching the Riverpod settings state in the App root, changing the language in SettingsScreen causes MaterialApp to rebuild with the new locale immediately — no app restart required.

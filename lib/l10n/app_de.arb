@@ -1,3 +1,47 @@
 {
-  "@@locale": "de"
+  "@@locale": "de",
+  "appTitle": "Abfahrtstafel",
+  "loading": "Laden...",
+  "noConnection": "Keine Internetverbindung",
+  "locationDenied": "Standortzugriff verweigert",
+  "locationDisabled": "Ortungsdienste deaktiviert",
+  "locationTimeout": "Standort konnte nicht ermittelt werden. Bitte erneut versuchen.",
+  "noStopsFound": "Keine Haltestellen in der Nähe gefunden.",
+  "retry": "Wiederholen",
+  "openSettings": "Einstellungen öffnen",
+  "openLocationSettings": "Ortungseinstellungen öffnen",
+  "settingsTitle": "Einstellungen",
+  "departureCount": "Anzahl Abfahrten",
+  "language": "Sprache",
+  "refreshInterval": "Automatische Aktualisierung",
+  "seconds": "{n} Sekunden",
+  "@seconds": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "minutes": "{n} Min.",
+  "@minutes": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "departingNow": "Jetzt",
+  "updatedAgo": "Aktualisiert vor {n}s",
+  "@updatedAgo": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "nearbyStops": "Nahe Haltestellen",
+  "noDepartures": "Keine Abfahrten verfügbar.",
+  "disruption": "Störung",
+  "checkSbb": "Details in der SBB-App",
+  "about": "Über die App",
+  "dataSource": "Daten: transport.opendata.ch",
+  "platform": "Gleis",
+  "langDe": "Deutsch",
+  "langFr": "Français",
+  "langIt": "Italiano",
+  "langEn": "English"
 }

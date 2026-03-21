@@ -2,14 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../models/departure.dart';
+import '../models/disruption.dart';
 import '../models/stop.dart';
-import '../providers/departures_provider.dart';
+import '../providers/settings_provider.dart';
 import '../providers/stop_provider.dart';
+import '../screens/settings_screen.dart';
+import '../services/disruption_api.dart';
 import '../services/exceptions.dart';
 import '../services/location_service.dart';
+import '../services/transport_api.dart';
 import '../widgets/departure_tile.dart';
 import '../widgets/stop_selector.dart';
 
@@ -27,22 +32,24 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   bool _loading = true;
   String? _errorMessage;
-  bool _isLocationError = false;
   bool _isPermissionError = false;
+  bool _isLocationError = false;
 
   DateTime? _lastUpdated;
   Timer? _refreshTimer;
   Timer? _clockTimer;
 
+  // Key that changes on each refresh, driving AnimatedSwitcher.
+  int _listVersion = 0;
+
   @override
   void initState() {
     super.initState();
     _initialLoad();
-
-    // Update the "X seconds ago" label every second.
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
+    _clockTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) { if (mounted) setState(() {}); },
+    );
   }
 
   @override
@@ -53,38 +60,40 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Data loading
+  // Loading
   // ---------------------------------------------------------------------------
 
   Future<void> _initialLoad() async {
     setState(() {
       _loading = true;
       _errorMessage = null;
-      _isLocationError = false;
       _isPermissionError = false;
+      _isLocationError = false;
     });
 
     try {
-      final locationService = ref.read(locationServiceProvider);
-      final (lat, lng) = await locationService.getCurrentPosition();
+      final location = ref.read(locationServiceProvider);
+      final (lat, lng) = await location.getCurrentPosition();
 
       final api = ref.read(transportApiProvider);
       final stops = await api.getNearbyStops(lat, lng);
 
+      if (!mounted) return;
+
       if (stops.isEmpty) {
+        final l10n = AppLocalizations.of(context);
         setState(() {
           _loading = false;
-          _errorMessage = 'No stops found near your location.';
+          _errorMessage = l10n?.noStopsFound ?? 'No stops found.';
         });
         return;
       }
 
-      // Restore last-used stop if it is in the nearby list.
       final lastStop = await ref.read(stopProvider.notifier).loadLastStop();
-      final initial = (lastStop != null &&
-              stops.any((s) => s.id == lastStop.id))
-          ? stops.firstWhere((s) => s.id == lastStop.id)
-          : stops.first;
+      final initial =
+          (lastStop != null && stops.any((s) => s.id == lastStop.id))
+              ? stops.firstWhere((s) => s.id == lastStop.id)
+              : stops.first;
 
       setState(() {
         _nearbyStops = stops;
@@ -95,23 +104,32 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       await _loadDepartures();
       _startAutoRefresh();
     } on LocationPermissionDeniedException {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       setState(() {
         _loading = false;
         _isPermissionError = true;
-        _errorMessage = 'Location permission is required to find nearby stops.';
+        _errorMessage = l10n?.locationDenied ?? 'Location permission denied.';
       });
     } on LocationServiceDisabledException {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       setState(() {
         _loading = false;
         _isLocationError = true;
-        _errorMessage = 'Please enable location services and try again.';
+        _errorMessage =
+            l10n?.locationDisabled ?? 'Location services disabled.';
       });
     } on LocationTimeoutException {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       setState(() {
         _loading = false;
-        _errorMessage = 'Could not determine your location. Please try again.';
+        _errorMessage =
+            l10n?.locationTimeout ?? 'Could not determine location.';
       });
     } on AppException catch (e) {
+      if (!mounted) return;
       setState(() {
         _loading = false;
         _errorMessage = e.message;
@@ -123,28 +141,57 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final stop = _selectedStop;
     if (stop == null) return;
 
+    final settings = ref.read(settingsProvider).valueOrNull;
+    final limit = settings?.departureCount ?? 10;
+
     try {
       final api = ref.read(transportApiProvider);
-      final departures = await api.getDepartures(stop.id);
+      final disruptionApi = ref.read(disruptionApiProvider);
+
+      // Fetch departures and disruptions concurrently.
+      final (departures, disruptions) = await (
+        api.getDepartures(stop.id, limit: limit),
+        disruptionApi
+            .getDisruptions()
+            .catchError((_) => <Disruption>[]),
+      ).wait;
+
+      final merged = _mergeDisruptions(departures, disruptions);
+
       if (mounted) {
         setState(() {
-          _departures = departures;
+          _departures = merged;
           _lastUpdated = DateTime.now();
           _errorMessage = null;
+          _listVersion++;
         });
       }
     } on AppException catch (e) {
-      if (mounted) {
-        setState(() => _errorMessage = e.message);
-      }
+      if (mounted) setState(() => _errorMessage = e.message);
     }
+  }
+
+  List<Departure> _mergeDisruptions(
+    List<Departure> departures,
+    List<Disruption> disruptions,
+  ) {
+    if (disruptions.isEmpty) return departures;
+    return departures.map((d) {
+      final hit = disruptions.any(
+        (dis) => dis.affectedLine == null || dis.affectedLine == d.line,
+      );
+      return hit ? d.withDisruption(true) : d;
+    }).toList();
   }
 
   void _startAutoRefresh() {
     _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _loadDepartures();
-    });
+    final interval =
+        ref.read(settingsProvider).valueOrNull?.refreshIntervalSeconds ?? 30;
+    _refreshTimer = Timer.periodic(
+      Duration(seconds: interval),
+      (_) => _loadDepartures(),
+    );
   }
 
   Future<void> _onStopSelected(Stop stop) async {
@@ -153,8 +200,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     await _loadDepartures();
   }
 
-  Future<void> _onRefresh() async {
-    await _loadDepartures();
+  Future<void> _onRefresh() async => _loadDepartures();
+
+  Future<void> _openSettings() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+    );
+    // Restart timer in case the interval changed.
+    if (mounted) _startAutoRefresh();
   }
 
   // ---------------------------------------------------------------------------
@@ -163,84 +217,95 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Swiss Departure Board'),
+        title: Text(l10n?.appTitle ?? 'Departure Board'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: l10n?.settingsTitle ?? 'Settings',
+            onPressed: _openSettings,
+          ),
+        ],
       ),
-      body: _buildBody(),
+      body: _buildBody(l10n),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(AppLocalizations? l10n) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: Color(0xFFffd700)),
+            const SizedBox(height: 16),
+            Text(l10n?.loading ?? 'Loading...'),
+          ],
+        ),
+      );
     }
 
     if (_isPermissionError) {
-      return _CenteredMessage(
-        message: _errorMessage ?? 'Location permission denied.',
-        actionLabel: 'Open Settings',
+      return _ErrorView(
+        message: _errorMessage ?? '',
+        actionLabel: l10n?.openSettings ?? 'Open Settings',
         onAction: Geolocator.openAppSettings,
       );
     }
 
     if (_isLocationError) {
-      return _CenteredMessage(
-        message: _errorMessage ?? 'Location services disabled.',
-        actionLabel: 'Open Location Settings',
+      return _ErrorView(
+        message: _errorMessage ?? '',
+        actionLabel: l10n?.openLocationSettings ?? 'Open Location Settings',
         onAction: Geolocator.openLocationSettings,
       );
     }
 
     if (_selectedStop == null) {
-      return _CenteredMessage(
-        message: _errorMessage ?? 'An error occurred.',
-        actionLabel: 'Retry',
+      return _ErrorView(
+        message: _errorMessage ?? '',
+        actionLabel: l10n?.retry ?? 'Retry',
         onAction: _initialLoad,
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _onRefresh,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(child: _buildHeader()),
-          if (_errorMessage != null)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ),
+    return Column(
+      children: [
+        _buildHeader(l10n),
+        if (_errorMessage != null)
+          Container(
+            width: double.infinity,
+            color: Colors.red.shade900.withAlpha(180),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
             ),
-          if (_departures.isEmpty && _errorMessage == null)
-            const SliverFillRemaining(
-              child: Center(child: Text('No departures available.')),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) =>
-                    DepartureTile(departure: _departures[index]),
-                childCount: _departures.length,
-              ),
-            ),
-        ],
-      ),
+          ),
+        Expanded(
+          child: RefreshIndicator(
+            color: const Color(0xFFffd700),
+            backgroundColor: const Color(0xFF16213e),
+            onRefresh: _onRefresh,
+            child: _buildDepartureList(l10n),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations? l10n) {
     final stop = _selectedStop!;
     final secondsAgo = _lastUpdated == null
         ? null
         : DateTime.now().difference(_lastUpdated!).inSeconds;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+    return Container(
+      color: const Color(0xFF16213e),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -252,33 +317,84 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           if (_nearbyStops.length < 2)
             Text(
               stop.name,
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.3,
+              ),
             ),
           if (secondsAgo != null)
-            Text(
-              'Updated $secondsAgo s ago',
-              style: Theme.of(context).textTheme.bodySmall,
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                l10n?.updatedAgo(secondsAgo) ?? 'Updated ${secondsAgo}s ago',
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
+              ),
             ),
-          const Divider(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDepartureList(AppLocalizations? l10n) {
+    if (_departures.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(32),
+            child: Center(
+              child: Text(
+                l10n?.noDepartures ?? 'No departures available.',
+                style: const TextStyle(color: Colors.white54),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // AnimatedSwitcher fades between old and new list on each refresh.
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: ListView.builder(
+        key: ValueKey(_listVersion),
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: _departures.length,
+        itemBuilder: (context, index) {
+          final departure = _departures[index];
+          // Staggered slide-up + fade-in on first render of this list version.
+          return TweenAnimationBuilder<double>(
+            key: ValueKey('${_listVersion}_$index'),
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 180 + index * 40),
+            curve: Curves.easeOut,
+            builder: (context, value, child) => Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 14 * (1 - value)),
+                child: child,
+              ),
+            ),
+            child: DepartureTile(departure: departure),
+          );
+        },
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Helper widget
+// Shared error view
 // ---------------------------------------------------------------------------
 
-class _CenteredMessage extends StatelessWidget {
+class _ErrorView extends StatelessWidget {
   final String message;
   final String actionLabel;
   final VoidCallback onAction;
 
-  const _CenteredMessage({
+  const _ErrorView({
     required this.message,
     required this.actionLabel,
     required this.onAction,
@@ -288,12 +404,22 @@ class _CenteredMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(message, textAlign: TextAlign.center),
+            const Icon(
+              Icons.location_off_outlined,
+              size: 48,
+              color: Colors.white38,
+            ),
             const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 24),
             ElevatedButton(
               onPressed: onAction,
               child: Text(actionLabel),

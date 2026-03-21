@@ -1,3 +1,47 @@
 {
-  "@@locale": "it"
+  "@@locale": "it",
+  "appTitle": "Tabella delle partenze",
+  "loading": "Caricamento...",
+  "noConnection": "Nessuna connessione internet",
+  "locationDenied": "Accesso alla posizione negato",
+  "locationDisabled": "Servizi di localizzazione disattivati",
+  "locationTimeout": "Impossibile determinare la posizione. Riprovare.",
+  "noStopsFound": "Nessuna fermata trovata nelle vicinanze.",
+  "retry": "Riprova",
+  "openSettings": "Apri impostazioni",
+  "openLocationSettings": "Apri impostazioni di posizione",
+  "settingsTitle": "Impostazioni",
+  "departureCount": "Numero di partenze",
+  "language": "Lingua",
+  "refreshInterval": "Aggiornamento automatico",
+  "seconds": "{n} secondi",
+  "@seconds": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "minutes": "{n} min",
+  "@minutes": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "departingNow": "Ora",
+  "updatedAgo": "Aggiornato {n}s fa",
+  "@updatedAgo": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "nearbyStops": "Fermate vicine",
+  "noDepartures": "Nessuna partenza disponibile.",
+  "disruption": "Perturbazione",
+  "checkSbb": "Controlla l'app FFS per i dettagli",
+  "about": "Informazioni",
+  "dataSource": "Dati: transport.opendata.ch",
+  "platform": "Binario",
+  "langDe": "Deutsch",
+  "langFr": "Français",
+  "langIt": "Italiano",
+  "langEn": "English"
 }

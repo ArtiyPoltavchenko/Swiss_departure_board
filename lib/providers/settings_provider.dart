@@ -7,14 +7,25 @@ class AppSettings {
   final int departureCount;
   final String locale;
 
+  /// Auto-refresh interval in seconds. Supported values: 15, 30, 60, 120.
+  final int refreshIntervalSeconds;
+
   const AppSettings({
     this.departureCount = 10,
     this.locale = 'de',
+    this.refreshIntervalSeconds = 30,
   });
 
-  AppSettings copyWith({int? departureCount, String? locale}) => AppSettings(
+  AppSettings copyWith({
+    int? departureCount,
+    String? locale,
+    int? refreshIntervalSeconds,
+  }) =>
+      AppSettings(
         departureCount: departureCount ?? this.departureCount,
         locale: locale ?? this.locale,
+        refreshIntervalSeconds:
+            refreshIntervalSeconds ?? this.refreshIntervalSeconds,
       );
 }
 
@@ -31,7 +42,12 @@ class SettingsNotifier extends AsyncNotifier<AppSettings> {
     final prefs = ref.read(preferencesProvider);
     final count = await prefs.loadDepartureCount();
     final locale = await prefs.loadLocale();
-    return AppSettings(departureCount: count, locale: locale);
+    final interval = await prefs.loadRefreshInterval();
+    return AppSettings(
+      departureCount: count,
+      locale: locale,
+      refreshIntervalSeconds: interval,
+    );
   }
 
   /// Updates the number of departures shown and persists the value.
@@ -46,5 +62,12 @@ class SettingsNotifier extends AsyncNotifier<AppSettings> {
     final prefs = ref.read(preferencesProvider);
     await prefs.saveLocale(locale);
     state = state.whenData((s) => s.copyWith(locale: locale));
+  }
+
+  /// Updates the auto-refresh interval and persists the value.
+  Future<void> setRefreshInterval(int seconds) async {
+    final prefs = ref.read(preferencesProvider);
+    await prefs.saveRefreshInterval(seconds);
+    state = state.whenData((s) => s.copyWith(refreshIntervalSeconds: seconds));
   }
 }

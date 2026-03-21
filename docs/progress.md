@@ -30,13 +30,13 @@
 - [x] Pull-to-refresh
 - [x] Loading/error states
 
-## Phase 4 — Full UI
-- [ ] Dark Swiss theme applied
-- [ ] Line badges with category colors
-- [ ] Settings screen (departure count, language, refresh interval)
-- [ ] Localization: DE/FR/IT/EN complete
-- [ ] Disruption badges on affected departures
-- [ ] Animations: fade refresh, staggered load
+## Phase 4 — Full UI ✅
+- [x] Dark Swiss theme applied (#1a1a2e background, gold accent)
+- [x] Line badges with category colors (SBB red/blue/dark/teal/brown)
+- [x] Settings screen (departure count, language, refresh interval)
+- [x] Localization: DE/FR/IT/EN complete (35 strings per locale)
+- [x] Disruption badges on affected departures (⚠️ + bottom sheet)
+- [x] Animations: AnimatedSwitcher fade on refresh, staggered slide-in
 
 ## Phase 5 — Widget
 - [ ] widget_layout.xml — dark card, 4 departure rows

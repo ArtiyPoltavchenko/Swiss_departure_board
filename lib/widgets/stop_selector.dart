@@ -26,6 +26,9 @@ class StopSelector extends StatelessWidget {
       value: selectedStop,
       isExpanded: true,
       underline: const SizedBox.shrink(),
+      dropdownColor: const Color(0xFF16213e),
+      iconEnabledColor: Colors.white54,
+      style: const TextStyle(color: Colors.white, fontSize: 16),
       items: stops.map((stop) {
         final label = stop.distance != null
             ? '${stop.name} (${stop.distance} m)'
@@ -35,6 +38,7 @@ class StopSelector extends StatelessWidget {
           child: Text(
             label,
             overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white),
           ),
         );
       }).toList(),
