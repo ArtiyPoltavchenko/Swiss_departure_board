@@ -25,7 +25,7 @@ class LocationService {
   /// Throws [LocationPermissionDeniedException] if access is denied.
   /// Throws [LocationServiceDisabledException] if GPS is off.
   /// Throws [LocationTimeoutException] if position cannot be obtained within
-  /// 15 seconds.
+  /// 5 seconds (down from 15 s — callers should fall back to last known stop).
   Future<(double, double)> getCurrentPosition() async {
     if (_positionGetter == null) {
       // Check service enabled
@@ -51,11 +51,13 @@ class LocationService {
               : Geolocator.getCurrentPosition(
                   locationSettings: const LocationSettings(
                     accuracy: LocationAccuracy.high,
-                    timeLimit: Duration(seconds: 15),
+                    // 5 s timeout — callers fall back to last known stop on
+                    // LocationTimeoutException (e.g. indoor, weak GPS signal).
+                    timeLimit: Duration(seconds: 5),
                   ),
                 ))
           .timeout(
-        const Duration(seconds: 15),
+        const Duration(seconds: 5),
         onTimeout: () => throw const LocationTimeoutException(),
       );
 
@@ -71,6 +73,21 @@ class LocationService {
         throw const LocationTimeoutException();
       }
       rethrow;
+    }
+  }
+
+  /// Returns the last position cached by the OS, without requesting a new fix.
+  ///
+  /// Returns `null` if no cached position is available (fresh install,
+  /// permission never granted, or location services off).
+  /// Never throws — callers should treat null as "unavailable".
+  Future<(double, double)?> getLastKnownPosition() async {
+    try {
+      final pos = await Geolocator.getLastKnownPosition();
+      if (pos == null) return null;
+      return (pos.latitude, pos.longitude);
+    } catch (_) {
+      return null;
     }
   }
 }

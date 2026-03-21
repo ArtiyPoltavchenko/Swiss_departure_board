@@ -43,5 +43,15 @@
   "langDe": "Deutsch",
   "langFr": "Français",
   "langIt": "Italiano",
-  "langEn": "English"
+  "langEn": "English",
+  "offlineDataFrom": "Hors ligne — dernières données de {time}",
+  "@offlineDataFrom": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "searchStopTitle": "Rechercher un arrêt",
+  "searchStopHint": "Rechercher...",
+  "noSearchResults": "Aucun arrêt trouvé",
+  "usingLastLocation": "Utilisation de la dernière position connue"
 }

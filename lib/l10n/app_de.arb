@@ -43,5 +43,15 @@
   "langDe": "Deutsch",
   "langFr": "Français",
   "langIt": "Italiano",
-  "langEn": "English"
+  "langEn": "English",
+  "offlineDataFrom": "Offline — letzte Daten von {time}",
+  "@offlineDataFrom": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "searchStopTitle": "Haltestelle suchen",
+  "searchStopHint": "Suchen...",
+  "noSearchResults": "Keine Haltestellen gefunden",
+  "usingLastLocation": "Letzten bekannten Standort verwendet"
 }

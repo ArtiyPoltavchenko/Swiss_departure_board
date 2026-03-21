@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/departure.dart';
 import '../models/disruption.dart';
@@ -35,12 +37,29 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   bool _isPermissionError = false;
   bool _isLocationError = false;
 
+  /// True when displaying stale departures from disk cache (no network).
+  bool _isOffline = false;
+
   DateTime? _lastUpdated;
   Timer? _refreshTimer;
   Timer? _clockTimer;
 
-  // Key that changes on each refresh, driving AnimatedSwitcher.
+  /// Changed on every [_loadDepartures] call so that a stale result received
+  /// after a stop switch is silently discarded.
+  Object _departureToken = Object();
+
   int _listVersion = 0;
+
+  // ---------------------------------------------------------------------------
+  // SharedPreferences keys for offline departure cache
+  // ---------------------------------------------------------------------------
+
+  static String _cacheKey(String stopId) => 'dep_cache_$stopId';
+  static String _cacheTimeKey(String stopId) => 'dep_cache_time_$stopId';
+
+  // ---------------------------------------------------------------------------
+  // Lifecycle
+  // ---------------------------------------------------------------------------
 
   @override
   void initState() {
@@ -48,7 +67,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     _initialLoad();
     _clockTimer = Timer.periodic(
       const Duration(seconds: 1),
-      (_) { if (mounted) setState(() {}); },
+      (_) {
+        if (mounted) setState(() {});
+      },
     );
   }
 
@@ -60,7 +81,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Loading
+  // Loading — initial
   // ---------------------------------------------------------------------------
 
   Future<void> _initialLoad() async {
@@ -69,40 +90,13 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       _errorMessage = null;
       _isPermissionError = false;
       _isLocationError = false;
+      _isOffline = false;
     });
 
     try {
       final location = ref.read(locationServiceProvider);
       final (lat, lng) = await location.getCurrentPosition();
-
-      final api = ref.read(transportApiProvider);
-      final stops = await api.getNearbyStops(lat, lng);
-
-      if (!mounted) return;
-
-      if (stops.isEmpty) {
-        final l10n = AppLocalizations.of(context);
-        setState(() {
-          _loading = false;
-          _errorMessage = l10n?.noStopsFound ?? 'No stops found.';
-        });
-        return;
-      }
-
-      final lastStop = await ref.read(stopProvider.notifier).loadLastStop();
-      final initial =
-          (lastStop != null && stops.any((s) => s.id == lastStop.id))
-              ? stops.firstWhere((s) => s.id == lastStop.id)
-              : stops.first;
-
-      setState(() {
-        _nearbyStops = stops;
-        _selectedStop = initial;
-        _loading = false;
-      });
-
-      await _loadDepartures();
-      _startAutoRefresh();
+      await _loadStopsAndDepartures(lat, lng);
     } on LocationPermissionDeniedException {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
@@ -122,12 +116,42 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       });
     } on LocationTimeoutException {
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context);
-      setState(() {
-        _loading = false;
-        _errorMessage =
-            l10n?.locationTimeout ?? 'Could not determine location.';
-      });
+      // 1. Try OS-cached GPS position (usually available even indoors).
+      final location = ref.read(locationServiceProvider);
+      final lastPos = await location.getLastKnownPosition();
+      if (lastPos != null) {
+        _showSnackBar(
+          AppLocalizations.of(context)?.usingLastLocation ??
+              'Using last known location',
+        );
+        await _loadStopsAndDepartures(lastPos.$1, lastPos.$2);
+        return;
+      }
+      // 2. Fall back to last saved stop.
+      final lastStop = await ref.read(stopProvider.notifier).loadLastStop();
+      if (lastStop != null && mounted) {
+        _showSnackBar(
+          AppLocalizations.of(context)?.usingLastLocation ??
+              'Using last known location',
+        );
+        setState(() {
+          _nearbyStops = [lastStop];
+          _selectedStop = lastStop;
+          _loading = false;
+        });
+        await _loadDepartures();
+        _startAutoRefresh();
+        return;
+      }
+      // 3. Completely stuck.
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        setState(() {
+          _loading = false;
+          _errorMessage =
+              l10n?.locationTimeout ?? 'Could not determine your location.';
+        });
+      }
     } on AppException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -137,9 +161,50 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     }
   }
 
-  Future<void> _loadDepartures() async {
+  /// Shared helper: given a GPS fix, find nearby stops and load departures.
+  Future<void> _loadStopsAndDepartures(double lat, double lng) async {
+    final api = ref.read(transportApiProvider);
+    final stops = await api.getNearbyStops(lat, lng);
+
+    if (!mounted) return;
+
+    if (stops.isEmpty) {
+      final l10n = AppLocalizations.of(context);
+      setState(() {
+        _loading = false;
+        _errorMessage = l10n?.noStopsFound ?? 'No stops found.';
+      });
+      return;
+    }
+
+    final lastStop = await ref.read(stopProvider.notifier).loadLastStop();
+    final initial =
+        (lastStop != null && stops.any((s) => s.id == lastStop.id))
+            ? stops.firstWhere((s) => s.id == lastStop.id)
+            : stops.first;
+
+    if (!mounted) return;
+    setState(() {
+      _nearbyStops = stops;
+      _selectedStop = initial;
+      _loading = false;
+    });
+
+    await _loadDepartures();
+    _startAutoRefresh();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Loading — departures
+  // ---------------------------------------------------------------------------
+
+  Future<void> _loadDepartures({bool forceRefresh = false}) async {
     final stop = _selectedStop;
     if (stop == null) return;
+
+    // Token prevents stale results from being applied after a stop switch.
+    final token = Object();
+    _departureToken = token;
 
     final settings = ref.read(settingsProvider).valueOrNull;
     final limit = settings?.departureCount ?? 10;
@@ -148,28 +213,102 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       final api = ref.read(transportApiProvider);
       final disruptionApi = ref.read(disruptionApiProvider);
 
-      // Fetch departures and disruptions concurrently.
       final (departures, disruptions) = await (
-        api.getDepartures(stop.id, limit: limit),
-        disruptionApi
-            .getDisruptions()
-            .catchError((_) => <Disruption>[]),
+        api.getDepartures(stop.id, limit: limit, forceRefresh: forceRefresh),
+        disruptionApi.getDisruptions().catchError((_) => <Disruption>[]),
       ).wait;
 
-      final merged = _mergeDisruptions(departures, disruptions);
+      if (!mounted || token != _departureToken) return;
 
-      if (mounted) {
+      final merged = _mergeDisruptions(departures, disruptions);
+      await _saveDepartureCache(stop.id, departures);
+
+      setState(() {
+        _departures = merged;
+        _lastUpdated = DateTime.now();
+        _errorMessage = null;
+        _isOffline = false;
+        _listVersion++;
+      });
+    } on NoNetworkException {
+      if (!mounted || token != _departureToken) return;
+      // Show stale cached data with an offline banner.
+      final cached = await _loadDepartureCache(stop.id);
+      if (cached != null && mounted) {
+        final merged = _mergeDisruptions(cached.$1, []);
         setState(() {
           _departures = merged;
-          _lastUpdated = DateTime.now();
+          _lastUpdated = cached.$2;
+          _isOffline = true;
           _errorMessage = null;
           _listVersion++;
         });
+      } else if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        setState(() => _errorMessage =
+            l10n?.noConnection ?? 'No internet connection');
       }
     } on AppException catch (e) {
-      if (mounted) setState(() => _errorMessage = e.message);
+      if (mounted && token == _departureToken) {
+        setState(() => _errorMessage = e.message);
+      }
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Departure cache — disk (SharedPreferences)
+  // ---------------------------------------------------------------------------
+
+  Future<void> _saveDepartureCache(
+      String stopId, List<Departure> departures) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = departures
+          .map((d) => {
+                'line': d.line,
+                'destination': d.destination,
+                'category': d.category,
+                'platform': d.platform,
+                'scheduled': d.scheduledTime.toIso8601String(),
+                'estimated': d.estimatedTime?.toIso8601String(),
+              })
+          .toList();
+      await prefs.setString(_cacheKey(stopId), jsonEncode(data));
+      await prefs.setString(
+          _cacheTimeKey(stopId), DateTime.now().toIso8601String());
+    } catch (_) {}
+  }
+
+  Future<(List<Departure>, DateTime)?> _loadDepartureCache(
+      String stopId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_cacheKey(stopId));
+      final timeStr = prefs.getString(_cacheTimeKey(stopId));
+      if (raw == null || timeStr == null) return null;
+      final time = DateTime.parse(timeStr);
+      final list = (jsonDecode(raw) as List).map((e) {
+        final m = e as Map<String, dynamic>;
+        final estimatedStr = m['estimated'] as String?;
+        return Departure(
+          line: m['line'] as String? ?? '',
+          destination: m['destination'] as String? ?? '',
+          scheduledTime: DateTime.parse(m['scheduled'] as String),
+          estimatedTime:
+              estimatedStr != null ? DateTime.parse(estimatedStr) : null,
+          category: m['category'] as String? ?? '',
+          platform: m['platform'] as String?,
+        );
+      }).toList();
+      return (list, time);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Disruption merge
+  // ---------------------------------------------------------------------------
 
   List<Departure> _mergeDisruptions(
     List<Departure> departures,
@@ -184,6 +323,10 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     }).toList();
   }
 
+  // ---------------------------------------------------------------------------
+  // Auto-refresh
+  // ---------------------------------------------------------------------------
+
   void _startAutoRefresh() {
     _refreshTimer?.cancel();
     final interval =
@@ -194,21 +337,42 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // User actions
+  // ---------------------------------------------------------------------------
+
   Future<void> _onStopSelected(Stop stop) async {
-    setState(() => _selectedStop = stop);
+    setState(() {
+      _selectedStop = stop;
+      _isOffline = false;
+    });
     await ref.read(stopProvider.notifier).saveLastStop(stop);
     await _loadDepartures();
   }
 
-  Future<void> _onRefresh() async => _loadDepartures();
+  /// Called by pull-to-refresh — bypasses in-memory cache.
+  Future<void> _onRefresh() async {
+    setState(() => _isOffline = false);
+    await _loadDepartures(forceRefresh: true);
+  }
 
   Future<void> _openSettings() async {
     await Navigator.push<void>(
       context,
       MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
     );
-    // Restart timer in case the interval changed.
     if (mounted) _startAutoRefresh();
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -249,10 +413,21 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     }
 
     if (_isPermissionError) {
-      return _ErrorView(
+      // Offer both "Open Settings" and a manual stop search as fallback.
+      return _StopSearchView(
         message: _errorMessage ?? '',
-        actionLabel: l10n?.openSettings ?? 'Open Settings',
-        onAction: Geolocator.openAppSettings,
+        api: ref.read(transportApiProvider),
+        onStopSelected: (stop) {
+          setState(() {
+            _nearbyStops = [stop];
+            _selectedStop = stop;
+            _isPermissionError = false;
+            _errorMessage = null;
+          });
+          ref.read(stopProvider.notifier).saveLastStop(stop);
+          _loadDepartures();
+          _startAutoRefresh();
+        },
       );
     }
 
@@ -275,14 +450,20 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     return Column(
       children: [
         _buildHeader(l10n),
-        if (_errorMessage != null)
+        // Offline banner — shown instead of a dismissable error so the user
+        // still sees the (stale) departure board below.
+        if (_isOffline)
+          _OfflineBanner(lastUpdated: _lastUpdated, l10n: l10n),
+        if (!_isOffline && _errorMessage != null)
           Container(
             width: double.infinity,
             color: Colors.red.shade900.withAlpha(180),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               _errorMessage!,
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style:
+                  const TextStyle(color: Colors.white70, fontSize: 13),
             ),
           ),
         Expanded(
@@ -315,21 +496,28 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             onStopSelected: _onStopSelected,
           ),
           if (_nearbyStops.length < 2)
-            Text(
-              stop.name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.3,
+            Tooltip(
+              message: stop.name,
+              child: Text(
+                stop.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
               ),
             ),
           if (secondsAgo != null)
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Text(
-                l10n?.updatedAgo(secondsAgo) ?? 'Updated ${secondsAgo}s ago',
-                style: const TextStyle(color: Colors.white38, fontSize: 11),
+                l10n?.updatedAgo(secondsAgo) ??
+                    'Updated ${secondsAgo}s ago',
+                style:
+                    const TextStyle(color: Colors.white38, fontSize: 11),
               ),
             ),
         ],
@@ -355,7 +543,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       );
     }
 
-    // AnimatedSwitcher fades between old and new list on each refresh.
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: ListView.builder(
@@ -364,7 +551,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         itemCount: _departures.length,
         itemBuilder: (context, index) {
           final departure = _departures[index];
-          // Staggered slide-up + fade-in on first render of this list version.
           return TweenAnimationBuilder<double>(
             key: ValueKey('${_listVersion}_$index'),
             tween: Tween(begin: 0.0, end: 1.0),
@@ -381,6 +567,190 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Offline banner
+// ---------------------------------------------------------------------------
+
+class _OfflineBanner extends StatelessWidget {
+  final DateTime? lastUpdated;
+  final AppLocalizations? l10n;
+
+  const _OfflineBanner({this.lastUpdated, this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final timeStr = lastUpdated == null
+        ? '—'
+        : '${lastUpdated!.hour.toString().padLeft(2, '0')}:'
+            '${lastUpdated!.minute.toString().padLeft(2, '0')}';
+
+    final message = l10n?.offlineDataFrom(timeStr) ??
+        'Offline — last data from $timeStr';
+
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFF7a5700),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        children: [
+          const Icon(Icons.wifi_off, size: 14, color: Colors.amber),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.amber, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Stop search view — shown when location permission is denied
+// ---------------------------------------------------------------------------
+
+class _StopSearchView extends StatefulWidget {
+  final String message;
+  final TransportApi api;
+  final void Function(Stop stop) onStopSelected;
+
+  const _StopSearchView({
+    required this.message,
+    required this.api,
+    required this.onStopSelected,
+  });
+
+  @override
+  State<_StopSearchView> createState() => _StopSearchViewState();
+}
+
+class _StopSearchViewState extends State<_StopSearchView> {
+  final _controller = TextEditingController();
+  List<Stop> _results = [];
+  bool _searching = false;
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onQueryChanged(String query) {
+    _debounce?.cancel();
+    if (query.trim().length < 2) {
+      setState(() => _results = []);
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      setState(() => _searching = true);
+      try {
+        final results = await widget.api.searchStops(query.trim());
+        if (mounted) setState(() => _results = results);
+      } catch (_) {
+        // Silent — empty list is shown
+      } finally {
+        if (mounted) setState(() => _searching = false);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Column(
+      children: [
+        // Permission error section
+        Container(
+          color: const Color(0xFF16213e),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.location_off_outlined,
+                size: 40,
+                color: Colors.white38,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: Geolocator.openAppSettings,
+                icon: const Icon(Icons.settings_outlined, size: 16),
+                label: Text(l10n?.openSettings ?? 'Open Settings'),
+              ),
+              const Divider(color: Colors.white24, height: 28),
+              Text(
+                l10n?.searchStopTitle ?? 'Search for a stop',
+                style: const TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _controller,
+                onChanged: _onQueryChanged,
+                autofocus: false,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: l10n?.searchStopHint ?? 'Search...',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                  filled: true,
+                  fillColor: const Color(0xFF0f3460),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_searching) const LinearProgressIndicator(minHeight: 2),
+        // Search results
+        Expanded(
+          child: _results.isEmpty
+              ? Center(
+                  child: Text(
+                    _controller.text.length >= 2
+                        ? (l10n?.noSearchResults ?? 'No stops found')
+                        : '',
+                    style: const TextStyle(color: Colors.white38),
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: _results.length,
+                  itemBuilder: (context, i) {
+                    final stop = _results[i];
+                    return ListTile(
+                      leading: const Icon(
+                        Icons.train_outlined,
+                        color: Colors.white54,
+                      ),
+                      title: Text(
+                        stop.name,
+                        style: const TextStyle(color: Colors.white),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () => widget.onStopSelected(stop),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

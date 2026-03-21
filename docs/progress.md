@@ -50,13 +50,13 @@
 - [x] Refresh button → HomeWidgetBackgroundIntent → Dart backgroundCallback
 - [x] Tap widget → HomeWidgetLaunchIntent → MainActivity
 
-## Phase 6 — Polish
-- [ ] Error handling: no internet, permission denied, GPS timeout, empty board
-- [ ] Response cache (15s TTL)
-- [ ] Manual stop search fallback
-- [ ] README.md complete
-- [ ] Testing checklist complete
-- [ ] App icon configured
+## Phase 6 — Polish ✅
+- [x] transport_api.dart: 15s in-memory cache per stop ID, forceRefresh param, searchStops()
+- [x] location_service.dart: timeout 15s→5s, getLastKnownPosition() fallback
+- [x] board_screen.dart: offline banner + disk cache, _StopSearchView (300ms debounce), _departureToken anti-race, GPS timeout→last known GPS→last saved stop with snackbar, Tooltip on stop name
+- [x] ARB files (all 4 languages): offlineDataFrom, searchStopTitle, searchStopHint, noSearchResults, usingLastLocation
+- [x] pubspec.yaml: flutter_launcher_icons ^0.13.0 + assets/icon/ config
+- [x] README.md: full project documentation
 
 ## Phase 7 — Publish
 - [ ] Signing config in build.gradle

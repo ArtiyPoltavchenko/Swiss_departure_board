@@ -60,3 +60,18 @@
 **Date:** 2026-03-21
 **Decision:** WidgetService uses direct instantiation (TransportApi(), SharedPreferences.getInstance()) rather than Riverpod providers.
 **Rationale:** WorkManager and HomeWidget callbacks run in an isolate without a Flutter widget tree. Riverpod providers require a ProviderScope which cannot exist outside the app. Static methods with direct instantiation are the correct pattern for background tasks.
+
+## ADR-013: MIT License
+**Date:** 2026-03-21
+**Decision:** The app is released under the MIT License.
+**Rationale:** Open source with minimal restrictions. The app adds value through UX, not secret data. Using public APIs with no proprietary data. MIT is compatible with all dependencies.
+
+## ADR-014: In-memory stationboard cache (15s TTL)
+**Date:** 2026-03-21
+**Decision:** TransportApi caches getDepartures results in a Map for 15 seconds. Pull-to-refresh passes forceRefresh:true to bypass it.
+**Rationale:** Users frequently rotate screen, switch settings, or open/close the app in quick succession. 15s prevents redundant API calls without showing perceptibly stale data (the board auto-refreshes every 30s anyway).
+
+## ADR-015: Disk departure cache for offline fallback
+**Date:** 2026-03-21
+**Decision:** After every successful getDepartures call, a minimal JSON representation is saved to SharedPreferences. On NoNetworkException, the cached data is loaded and shown with an offline banner.
+**Rationale:** The most common failure mode (brief loss of mobile data) should not blank the screen. Departure times will be stale but the stop name and line numbers are still useful for orientation.

@@ -14,8 +14,14 @@ final transportApiProvider = Provider<TransportApi>((_) => TransportApi());
 /// Never call the real API in tests — inject a [Dio] with a mock adapter.
 class TransportApi {
   static const _baseUrl = 'https://transport.opendata.ch/v1';
+  static const _cacheTtl = Duration(seconds: 15);
 
   final Dio _dio;
+
+  /// In-memory stationboard cache: stationId → (departures, fetchedAt).
+  /// Lives for the process lifetime; not persisted.
+  final Map<String, ({List<Departure> departures, DateTime fetchedAt})> _cache =
+      {};
 
   TransportApi({Dio? dio}) : _dio = dio ?? _buildDio();
 
@@ -57,13 +63,52 @@ class TransportApi {
     }
   }
 
+  /// Searches for stops matching [query] by name.
+  ///
+  /// Calls `GET /locations?query={query}&type=station`.
+  /// Returns an empty list on any error rather than throwing — callers treat
+  /// search failures as "no results".
+  Future<List<Stop>> searchStops(String query) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/locations',
+        queryParameters: {'query': query, 'type': 'station'},
+      );
+      final data = response.data;
+      if (data == null) return [];
+      final stations = data['stations'] as List<dynamic>? ?? [];
+      return stations
+          .take(8)
+          .map((s) => Stop.fromJson(s as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      _mapDioException(e);
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw ApiParseException(e.toString());
+    }
+  }
+
   /// Returns departure board for [stationId], up to [limit] entries.
   ///
   /// Calls `GET /stationboard?id={stationId}&limit={limit}`.
+  ///
+  /// Caches results for [_cacheTtl] (15 s). Pass [forceRefresh] = true to
+  /// bypass the cache (e.g. on pull-to-refresh).
   Future<List<Departure>> getDepartures(
     String stationId, {
     int limit = 10,
+    bool forceRefresh = false,
   }) async {
+    if (!forceRefresh) {
+      final entry = _cache[stationId];
+      if (entry != null &&
+          DateTime.now().difference(entry.fetchedAt) < _cacheTtl) {
+        return entry.departures;
+      }
+    }
+
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/stationboard',
@@ -72,10 +117,13 @@ class TransportApi {
       final data = response.data;
       if (data == null) throw const ApiParseException('Empty response body');
       final board = data['stationboard'] as List<dynamic>? ?? [];
-      return board
+      final departures = board
           .map((e) =>
               Departure.fromStationboardEntry(e as Map<String, dynamic>))
           .toList();
+
+      _cache[stationId] = (departures: departures, fetchedAt: DateTime.now());
+      return departures;
     } on DioException catch (e) {
       _mapDioException(e);
     } on AppException {

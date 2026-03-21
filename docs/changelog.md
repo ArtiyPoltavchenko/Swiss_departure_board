@@ -4,6 +4,15 @@ All notable changes to Swiss Departure Board.
 
 Format: [Semantic Versioning](https://semver.org/)
 
+## 0.6.0 — Polish (2026-03-21)
+- transport_api.dart: 15s in-memory cache (Map<stopId, {departures, fetchedAt}>), forceRefresh param bypasses cache on pull-to-refresh, searchStops() for manual stop search
+- location_service.dart: timeout reduced 15s→5s (faster fallback indoors), getLastKnownPosition() wraps Geolocator.getLastKnownPosition()
+- board_screen.dart: _departureToken (Object) cancels stale responses on rapid stop switching; on LocationTimeoutException: try OS-cached GPS → try last saved stop → show SnackBar "Using last known location"; _saveDepartureCache/_loadDepartureCache via SharedPreferences for offline data; _OfflineBanner widget (amber, wifi_off icon); _StopSearchView with 300ms debounce, searchStops(), ListTile results, Open Settings button; Tooltip wrapping stop name (long press shows full name); _onRefresh passes forceRefresh:true
+- ARB (EN/DE/FR/IT): +5 new keys: offlineDataFrom, searchStopTitle, searchStopHint, noSearchResults, usingLastLocation
+- pubspec.yaml: dev dep flutter_launcher_icons ^0.13.0, flutter_launcher_icons config block, assets: [assets/icon/]
+- README.md: complete project documentation
+- version.dart: 0.6.0
+
 ## 0.5.0 — Android Home Screen Widget (2026-03-21)
 - Android project structure: build.gradle, settings.gradle, gradle.properties, app/build.gradle
 - AndroidManifest.xml: MainActivity, HomeWidgetProvider, HomeWidgetBackgroundReceiver, all permissions
