@@ -1,14 +1,14 @@
 # Progress Tracker
 
 ## Phase 1 — Skeleton
-- [ ] Flutter project created
-- [ ] pubspec.yaml with all dependencies
-- [ ] Directory structure matches CLAUDE.md
-- [ ] Placeholder files in all directories
-- [ ] version.dart created
-- [ ] .gitignore configured
-- [ ] docs/ files created
-- [ ] `flutter pub get && flutter analyze` passes
+- [x] Flutter project created
+- [x] pubspec.yaml with all dependencies
+- [x] Directory structure matches CLAUDE.md
+- [x] Placeholder files in all directories
+- [x] version.dart created
+- [x] .gitignore configured
+- [x] docs/ files created
+- [ ] `flutter pub get && flutter analyze` passes (Flutter not installed in CI env — files ready)
 
 ## Phase 2 — Core Logic
 - [ ] Models: Stop, Departure, Disruption with fromJson
