@@ -63,6 +63,25 @@ void main() {
       expect(d.isDeparting, isTrue);
     });
 
+    test('normalises empty platform string to null', () {
+      // Fixed: API returns "" for stops without a platform. Previously this
+      // showed "Pl. " in the UI instead of hiding the sub-label.
+      final json = {
+        'stop': {
+          'departure':
+              DateTime.now().add(const Duration(hours: 1)).toIso8601String(),
+          'platform': '',
+          'prognosis': {},
+        },
+        'to': 'Bern',
+        'category': 'IC',
+        'number': '1',
+      };
+
+      final d = Departure.fromStationboardEntry(json);
+      expect(d.platform, isNull);
+    });
+
     test('uses estimatedTime over scheduledTime for minutesUntil', () {
       final scheduled = DateTime.now().add(const Duration(minutes: 10));
       final estimated = DateTime.now().add(const Duration(minutes: 15));
@@ -82,14 +101,26 @@ void main() {
       expect(d.minutesUntil, greaterThanOrEqualTo(14));
     });
 
-    test('category normalisation covers tram, bus, train, ship', () {
-      expect(_departureWithCategory('B').category, equals('bus'));
-      expect(_departureWithCategory('bus').category, equals('bus'));
+    test('category normalisation covers all real API uppercase values', () {
+      // Real API sends these UPPERCASE values — verify each maps correctly.
+      // Fixed: RE, BAT, FUN, GB were previously missing and fell through to
+      // the default, returning the raw lowercase string instead of the
+      // normalised category used by DepartureTile color logic.
       expect(_departureWithCategory('T').category, equals('tram'));
+      expect(_departureWithCategory('BUS').category, equals('bus'));
       expect(_departureWithCategory('IC').category, equals('train'));
+      expect(_departureWithCategory('IR').category, equals('train'));
+      expect(_departureWithCategory('RE').category, equals('train'));
       expect(_departureWithCategory('S').category, equals('train'));
-      expect(_departureWithCategory('ship').category, equals('ship'));
+      expect(_departureWithCategory('BAT').category, equals('ship'));
+      expect(_departureWithCategory('FUN').category, equals('cableway'));
+      expect(_departureWithCategory('GB').category, equals('cableway'));
       expect(_departureWithCategory('UNKNOWN').category, equals('unknown'));
+
+      // Legacy lowercase inputs (from cached data) still work.
+      expect(_departureWithCategory('tram').category, equals('tram'));
+      expect(_departureWithCategory('bus').category, equals('bus'));
+      expect(_departureWithCategory('ship').category, equals('ship'));
     });
   });
 }

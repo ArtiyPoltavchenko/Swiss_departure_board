@@ -4,6 +4,16 @@ All notable changes to Swiss Departure Board.
 
 Format: [Semantic Versioning](https://semver.org/)
 
+## 1.0.1 — Compilation & API Alignment (2026-03-21)
+- departure.dart: added missing transport.opendata.ch category mappings: RE→train, BAT→ship, FUN→cableway, GB→cableway. Previously these fell through to default and returned raw lowercase strings, causing wrong badge colors in DepartureTile and WidgetService.
+- departure.dart: normalize empty platform string ("") to null in fromStationboardEntry. API returns "" for stops without a platform; previously this showed "Pl. " in the departure tile.
+- stop.dart: distance field now uses `(num?)?.toInt()` instead of `as int?`. Prevents CastError if API returns distance as a double (e.g. 320.0).
+- pubspec.yaml: removed riverpod_annotation from runtime deps (app uses manual Riverpod, no @riverpod annotations). Removed riverpod_generator and build_runner from dev_deps (no codegen files in codebase).
+- assets/icon/.gitkeep: created missing assets/icon/ directory. flutter build fails silently when a listed assets directory is absent.
+- test/models/stop_test.dart: added test covering distance as float (320.0 → 320).
+- test/models/departure_test.dart: updated category normalisation test to cover all real API values (BUS, T, IC, IR, RE, S, BAT, FUN, GB, UNKNOWN); added test verifying empty platform "" normalises to null.
+- version.dart / pubspec.yaml: bumped to 1.0.1+2 (PATCH++ for bugfix).
+
 ## 1.0.0 — Initial Release (2026-03-21)
 - build.gradle: signingConfigs.release reads from android/key.properties; falls back to debug signing if file absent; shrinkResources true
 - android/key.properties: template file (gitignored); instructions for keytool command

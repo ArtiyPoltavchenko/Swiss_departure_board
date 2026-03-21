@@ -33,6 +33,21 @@ void main() {
       expect(stop.distance, isNull);
     });
 
+    test('distance tolerates float from API (e.g. 320.0)', () {
+      // Fixed: API may return distance as a double (e.g. 320.0).
+      // Previously `as int?` threw a CastError; now uses num?.toInt().
+      final json = {
+        'id': '8503000',
+        'name': 'Zürich HB',
+        'coordinate': {'x': 47.378177, 'y': 8.540192},
+        'distance': 320.0, // double — simulates API edge case
+      };
+
+      final stop = Stop.fromJson(json);
+
+      expect(stop.distance, equals(320));
+    });
+
     test('toJson round-trips back to the original stop via fromJson', () {
       const original = Stop(
         id: '8503000',
