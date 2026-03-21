@@ -7,14 +7,19 @@ import 'exceptions.dart';
 /// Riverpod provider for [DisruptionApi].
 final disruptionApiProvider = Provider<DisruptionApi>((_) => DisruptionApi());
 
-/// API key for opentransportdata.swiss.
-/// Phase 7 will replace this with a compile-time --dart-define secret.
-const String _apiKey = 'PLACEHOLDER';
+/// API key injected at build time via `--dart-define=DISRUPTION_API_KEY=xxx`.
+///
+/// If the key is absent (CI, local dev without a key), [DisruptionApi] returns
+/// an empty list silently — the app continues to work without disruption data.
+///
+/// Build with key:
+///   flutter build appbundle --dart-define=DISRUPTION_API_KEY=your_key
+const String _apiKey =
+    String.fromEnvironment('DISRUPTION_API_KEY', defaultValue: '');
 
 /// Client for the opentransportdata.swiss SIRI-SX disruption feed.
 ///
-/// If [_apiKey] is still the placeholder value, all methods return an empty
-/// list silently — the app continues to work without disruption data.
+/// Gracefully degrades to empty list when [_apiKey] is not provided.
 class DisruptionApi {
   static const _baseUrl =
       'https://api.opentransportdata.swiss/siri-sx-ch-json';
@@ -32,9 +37,9 @@ class DisruptionApi {
 
   /// Returns active disruptions. Optionally filtered by [lineRef].
   ///
-  /// Returns an empty list silently when the API key is the placeholder value.
+  /// Returns an empty list silently when no API key is configured.
   Future<List<Disruption>> getDisruptions({String? lineRef}) async {
-    if (_apiKey == 'PLACEHOLDER') return [];
+    if (_apiKey.isEmpty) return [];
 
     try {
       final response = await _dio.get<Map<String, dynamic>>(

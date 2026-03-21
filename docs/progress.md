@@ -58,11 +58,14 @@
 - [x] pubspec.yaml: flutter_launcher_icons ^0.13.0 + assets/icon/ config
 - [x] README.md: full project documentation
 
-## Phase 7 — Publish
-- [ ] Signing config in build.gradle
-- [ ] API key via --dart-define
-- [ ] ProGuard rules
-- [ ] Privacy policy
-- [ ] Play Store description draft
-- [ ] Version 1.0.0
-- [ ] Git tag v1.0.0
+## Phase 7 — Publish ✅
+- [x] build.gradle: signingConfigs.release from key.properties, fallback to debug, shrinkResources true
+- [x] android/key.properties: template with instructions (gitignored)
+- [x] proguard-rules.pro: Flutter, app classes, Dio/OkHttp, WorkManager, home_widget
+- [x] pubspec.yaml version: 1.0.0+1
+- [x] version.dart: 1.0.0
+- [x] disruption_api.dart: API key via String.fromEnvironment('DISRUPTION_API_KEY')
+- [x] docs/privacy_policy.md: full GDPR-friendly policy (location, APIs, no tracking)
+- [x] docs/play_store_description.md: EN + DE full description + assets checklist
+- [x] README.md: keystore generation steps + release build command with --dart-define
+- [x] Git tag: v1.0.0

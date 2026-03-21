@@ -75,3 +75,13 @@
 **Date:** 2026-03-21
 **Decision:** After every successful getDepartures call, a minimal JSON representation is saved to SharedPreferences. On NoNetworkException, the cached data is loaded and shown with an offline banner.
 **Rationale:** The most common failure mode (brief loss of mobile data) should not blank the screen. Departure times will be stale but the stop name and line numbers are still useful for orientation.
+
+## ADR-016: API key via --dart-define, not committed to source
+**Date:** 2026-03-21
+**Decision:** The opentransportdata.swiss API key is injected at build time via `--dart-define=DISRUPTION_API_KEY=xxx`. The app uses `String.fromEnvironment('DISRUPTION_API_KEY', defaultValue: '')`. If the key is absent, disruption features degrade silently.
+**Rationale:** Prevents accidental key exposure in git history. Allows CI/CD to inject the key from a secret vault. Keeps local development working without a key.
+
+## ADR-017: key.properties template committed; keystore NOT committed
+**Date:** 2026-03-21
+**Decision:** A template `android/key.properties` file (with placeholder values and instructions) is committed. The actual populated file is gitignored. The keystore file is never committed.
+**Rationale:** Template reduces friction for new developers setting up signing. The sensitive credential file stays off git. Follows standard Flutter signing documentation pattern.

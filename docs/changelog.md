@@ -4,6 +4,17 @@ All notable changes to Swiss Departure Board.
 
 Format: [Semantic Versioning](https://semver.org/)
 
+## 1.0.0 — Initial Release (2026-03-21)
+- build.gradle: signingConfigs.release reads from android/key.properties; falls back to debug signing if file absent; shrinkResources true
+- android/key.properties: template file (gitignored); instructions for keytool command
+- proguard-rules.pro: keep rules for Flutter, app package, Dio/OkHttp, coroutines, WorkManager, home_widget
+- pubspec.yaml version bumped to 1.0.0+1
+- disruption_api.dart: API key injected via `--dart-define=DISRUPTION_API_KEY`; empty string → silent empty list (no crash)
+- docs/privacy_policy.md: location usage, API list, local storage, no analytics declaration
+- docs/play_store_description.md: EN + DE full descriptions + Play Console assets checklist
+- README.md: keystore generation steps + signed AAB build command
+- Git tag: v1.0.0
+
 ## 0.6.0 — Polish (2026-03-21)
 - transport_api.dart: 15s in-memory cache (Map<stopId, {departures, fetchedAt}>), forceRefresh param bypasses cache on pull-to-refresh, searchStops() for manual stop search
 - location_service.dart: timeout reduced 15s→5s (faster fallback indoors), getLastKnownPosition() wraps Geolocator.getLastKnownPosition()

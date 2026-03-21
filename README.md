@@ -47,14 +47,45 @@ Both APIs are free and require no authentication for basic usage.
 # Install dependencies
 flutter pub get
 
-# Run on connected device or emulator
+# Run on connected device or emulator (debug)
 flutter run
 
-# Build release APK
-flutter build apk --release
+# Build debug APK
+flutter build apk --debug
+```
 
-# Build Android App Bundle (for Play Store)
-flutter build appbundle --release
+## Release Build (Google Play)
+
+### 1. Generate upload keystore (once per developer)
+
+```bash
+keytool -genkey -v \
+  -keystore ~/upload-keystore.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -alias upload
+```
+
+### 2. Create `android/key.properties` (gitignored)
+
+```properties
+storePassword=<your-keystore-password>
+keyPassword=<your-key-password>
+keyAlias=upload
+storeFile=<absolute-path-to>/upload-keystore.jks
+```
+
+### 3. Obtain a disruption API key (optional)
+
+Register at [opentransportdata.swiss](https://opentransportdata.swiss) for a
+free API key. Without it the app works fully but without disruption badges.
+
+### 4. Build the signed App Bundle
+
+```bash
+flutter build appbundle --release \
+  --dart-define=DISRUPTION_API_KEY=your_key_here
+
+# Output: build/app/outputs/bundle/release/app-release.aab
 ```
 
 Minimum Android version: **API 26 (Android 8.0)**
@@ -66,8 +97,6 @@ Place your 1024×1024 PNG icon at `assets/icon/icon.png`, then run:
 ```bash
 flutter pub run flutter_launcher_icons
 ```
-
-A designer-provided icon is planned for the final release (Phase 7).
 
 ## Privacy
 
