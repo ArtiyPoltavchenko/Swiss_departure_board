@@ -50,3 +50,13 @@
 **Date:** 2026-03-21
 **Decision:** App widget extends ConsumerWidget and watches settingsProvider for the locale.
 **Rationale:** Flutter's MaterialApp.locale is respected at runtime. By watching the Riverpod settings state in the App root, changing the language in SettingsScreen causes MaterialApp to rebuild with the new locale immediately — no app restart required.
+
+## ADR-011: Widget data via SharedPreferences bridge (home_widget pattern)
+**Date:** 2026-03-21
+**Decision:** Widget data is passed from Dart to the native AppWidgetProvider via SharedPreferences, using the home_widget package. No custom platform channel is needed.
+**Rationale:** home_widget is the standard community solution for this. It stores data under "HomeWidgetPlugin" SharedPreferences, provides HomeWidgetLaunchIntent and HomeWidgetBackgroundIntent helpers for Kotlin, and handles the Dart↔native bridge for background callbacks. A custom platform channel would duplicate this work.
+
+## ADR-012: WidgetService as static class — no Riverpod in background
+**Date:** 2026-03-21
+**Decision:** WidgetService uses direct instantiation (TransportApi(), SharedPreferences.getInstance()) rather than Riverpod providers.
+**Rationale:** WorkManager and HomeWidget callbacks run in an isolate without a Flutter widget tree. Riverpod providers require a ProviderScope which cannot exist outside the app. Static methods with direct instantiation are the correct pattern for background tasks.

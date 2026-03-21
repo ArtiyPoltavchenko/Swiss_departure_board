@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Swiss Departure Board</string>
+    <string name="widget_name">Departure Board Widget</string>
+    <string name="widget_description">Shows real-time departures from your nearest stop.</string>
+    <string name="widget_stop_loading">Loading stop…</string>
+    <string name="widget_no_data">No departure data</string>
+</resources>

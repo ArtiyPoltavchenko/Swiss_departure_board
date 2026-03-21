@@ -4,6 +4,19 @@ All notable changes to Swiss Departure Board.
 
 Format: [Semantic Versioning](https://semver.org/)
 
+## 0.5.0 — Android Home Screen Widget (2026-03-21)
+- Android project structure: build.gradle, settings.gradle, gradle.properties, app/build.gradle
+- AndroidManifest.xml: MainActivity, HomeWidgetProvider, HomeWidgetBackgroundReceiver, all permissions
+- widget_layout.xml: dark card (LinearLayout), header with stop name + refresh ImageView, 4 departure rows
+- widget_info.xml: 250×110dp min, resizable, 10 min OS update period
+- Drawables: widget_background.xml (rounded dark shape), ic_widget_refresh.xml (vector), line_badge_bg.xml
+- colors.xml: widget palette + all 6 badge category colors
+- HomeWidgetProvider.kt: reads HomeWidgetPlugin SharedPreferences, populates RemoteViews, sets badge colors via setBackgroundColor, "Now" shown in green, PendingIntents for tap-to-open and refresh
+- lib/services/widget_service.dart: static service, resolves stop (saved→geolocator fallback), fetches 4 departures, writes 13 SharedPreferences keys, triggers updateWidget
+- lib/main.dart: WidgetsFlutterBinding.ensureInitialized, WorkManager initialize + registerPeriodicTask (15 min, network required), HomeWidget.registerInteractivityCallback
+- Both callbackDispatcher and backgroundCallback annotated @pragma('vm:entry-point')
+- version.dart bumped to 0.5.0
+
 ## 0.4.0 — Full UI (2026-03-21)
 - Dark Swiss theme: #1a1a2e background, #ffd700 gold accent, #16213e surface
 - google_fonts added: Roboto Mono for line badges and countdown numbers

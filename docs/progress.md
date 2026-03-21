@@ -38,13 +38,17 @@
 - [x] Disruption badges on affected departures (⚠️ + bottom sheet)
 - [x] Animations: AnimatedSwitcher fade on refresh, staggered slide-in
 
-## Phase 5 — Widget
-- [ ] widget_layout.xml — dark card, 4 departure rows
-- [ ] Widget metadata (widget_info.xml)
-- [ ] WidgetService: fetch + write to SharedPreferences
-- [ ] WorkManager periodic task (15 min)
-- [ ] Refresh button functional
-- [ ] Tap widget → open app
+## Phase 5 — Widget ✅
+- [x] widget_layout.xml — dark card (#1a1a2e), 4 departure rows
+- [x] Widget metadata (widget_info.xml, 250×110dp, 10 min OS update)
+- [x] Android resources: colors.xml, strings.xml, styles.xml, drawables
+- [x] HomeWidgetProvider.kt — reads SharedPreferences, populates RemoteViews
+- [x] MainActivity.kt, AndroidManifest.xml (widget + WorkManager permissions)
+- [x] Android build files (build.gradle × 2, settings.gradle, gradle.properties)
+- [x] WidgetService: fetch + write to SharedPreferences (static, BG-safe)
+- [x] WorkManager periodic task (15 min, network-constrained)
+- [x] Refresh button → HomeWidgetBackgroundIntent → Dart backgroundCallback
+- [x] Tap widget → HomeWidgetLaunchIntent → MainActivity
 
 ## Phase 6 — Polish
 - [ ] Error handling: no internet, permission denied, GPS timeout, empty board
