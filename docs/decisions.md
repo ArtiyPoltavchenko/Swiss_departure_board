@@ -25,3 +25,18 @@
 **Date:** 2026-03-21
 **Decision:** Single dark theme matching physical station displays.
 **Rationale:** Real Swiss departure boards are dark background with light text. Maintaining one theme halves design and testing work. OLED-friendly. If users request light theme, add in future version.
+
+## ADR-006: Custom exception hierarchy over generic catches
+**Date:** 2026-03-21
+**Decision:** All service errors are wrapped in typed `AppException` subclasses before reaching providers/UI.
+**Rationale:** Explicit error types let the UI layer display context-specific messages (timeout ≠ no network ≠ permission denied). Generic `catch (e)` at UI level would lose that distinction. The hierarchy is shallow — one abstract base class and 7 leaf types — keeping it easy to extend.
+
+## ADR-007: Injectable position getter in LocationService
+**Date:** 2026-03-21
+**Decision:** `LocationService` accepts an optional `PositionGetter` function in its constructor.
+**Rationale:** Real geolocator APIs require device hardware; tests must not touch real GPS. Injecting the getter function avoids mockito code generation while keeping production code unchanged (getter is null by default).
+
+## ADR-008: Dio HttpClientAdapter for API tests (no mockito code generation)
+**Date:** 2026-03-21
+**Decision:** API tests use a custom `_MockAdapter` implementing `HttpClientAdapter`.
+**Rationale:** mockito 5.x requires `build_runner` to generate mock classes. Since the generated files are excluded from git and the CI environment has no Flutter toolchain, a hand-written adapter is simpler, requires no code generation, and tests the exact same code paths.
