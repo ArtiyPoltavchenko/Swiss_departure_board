@@ -9,8 +9,9 @@
 Native Android app (Flutter/Dart) showing real-time departure boards for the nearest Swiss public transport stop. Digital replica of physical station displays. No route planning, no accounts, no ads.
 
 - **Package:** `ch.swissdeparture.swiss_departure_board`
-- **Version:** `1.0.0+1` (git tag `v1.0.0`)
+- **Version:** `1.0.1+2`
 - **Branch:** `claude/phase-01-skeleton-DQRCd`
+- **Latest commit:** `a1f5829`
 - **Min Android:** API 26 (Android 8.0)
 - **Languages:** DE / FR / IT / EN (complete)
 
@@ -27,6 +28,7 @@ Native Android app (Flutter/Dart) showing real-time departure boards for the nea
 | 5 | Home Screen Widget | ✅ Done | `27c445a` |
 | 6 | Polish | ✅ Done | `2077523` |
 | 7 | Publish / Play Store Prep | ✅ Done | `69a1f6f` |
+| — | Compilation & API Alignment | ✅ Done | `a1f5829` |
 
 ---
 
@@ -51,64 +53,68 @@ Android build     : Gradle 8.7 + AGP 8.3.2 + Kotlin 1.9.22 + compileSdk 35
 
 ```
 swiss_departure_board/
-├── version.dart                     # 1.0.0
-├── pubspec.yaml                     # 1.0.0+1, all deps
+├── version.dart                     # 1.0.1
+├── pubspec.yaml                     # 1.0.1+2, cleaned deps
+├── assets/icon/.gitkeep             # placeholder (icon.png must be added before release)
 ├── android/
 │   ├── key.properties               # TEMPLATE (gitignored) — fill before build
 │   └── app/
-│       ├── build.gradle             # signingConfigs.release, shrinkResources
-│       ├── proguard-rules.pro       # Flutter/Dio/WorkManager keep rules
+│       ├── build.gradle             # signingConfigs.release, shrinkResources, fallback debug
+│       ├── proguard-rules.pro       # Flutter/Dio/OkHttp/WorkManager/home_widget keep rules
 │       └── src/main/
-│           ├── AndroidManifest.xml  # MainActivity, widget, WorkManager, permissions
+│           ├── AndroidManifest.xml  # MainActivity, widget receiver (exported=true), WorkManager
 │           ├── kotlin/.../
 │           │   ├── MainActivity.kt
 │           │   └── HomeWidgetProvider.kt
 │           └── res/
 │               ├── layout/widget_layout.xml
 │               ├── xml/widget_info.xml
-│               ├── drawable/*.xml   # widget_background, ic_widget_refresh, line_badge_bg
-│               └── values/colors.xml, strings.xml, styles.xml
+│               ├── drawable/        # widget_background, ic_widget_refresh, line_badge_bg
+│               └── values/          # colors.xml, strings.xml, styles.xml
 ├── lib/
 │   ├── main.dart                    # WorkManager init, widget callback, ProviderScope
-│   ├── app.dart                     # ConsumerWidget, locale switching
+│   ├── app.dart                     # ConsumerWidget, locale live-switching
 │   ├── models/
-│   │   ├── stop.dart                # Stop(id, name, lat, lon) + fromJson
-│   │   ├── departure.dart           # Departure + minutesUntil + isDeparting + fromJson
+│   │   ├── stop.dart                # Stop(id, name, lat, lon) + fromJson; distance via num?.toInt()
+│   │   ├── departure.dart           # Departure + fromStationboardEntry; full category mapping; empty platform → null
 │   │   └── disruption.dart          # Disruption + fromJson
 │   ├── services/
 │   │   ├── exceptions.dart          # AppException + 7 typed subclasses
-│   │   ├── location_service.dart    # Injectable PositionGetter, getLastKnownPosition
-│   │   ├── transport_api.dart       # getNearbyStops, getDepartures (15s cache), searchStops
-│   │   ├── disruption_api.dart      # getDisruptions (--dart-define key, degrades silently)
-│   │   ├── preferences.dart         # SharedPreferences wrapper
-│   │   └── widget_service.dart      # Static BG-safe: fetch + write SP + updateWidget
+│   │   ├── location_service.dart    # Injectable PositionGetter, getLastKnownPosition, 5s timeout
+│   │   ├── transport_api.dart       # getNearbyStops (x=lat,y=lng), getDepartures (15s cache), searchStops
+│   │   ├── disruption_api.dart      # getDisruptions; key via String.fromEnvironment('DISRUPTION_API_KEY')
+│   │   ├── preferences.dart         # SharedPreferences wrapper (stop, count, locale, interval)
+│   │   └── widget_service.dart      # Static BG-safe: fetch 4 deps + write SP + updateWidget
 │   ├── providers/
-│   │   ├── stop_provider.dart       # StopNotifier (Riverpod)
-│   │   ├── departures_provider.dart # departuresProvider.family
-│   │   └── settings_provider.dart  # SettingsNotifier (count, locale, refreshInterval)
+│   │   ├── stop_provider.dart       # StopNotifier (AsyncNotifierProvider)
+│   │   ├── departures_provider.dart # FutureProvider.family<List<Departure>, String>
+│   │   └── settings_provider.dart   # SettingsNotifier (count, locale, refreshIntervalSeconds)
 │   ├── screens/
-│   │   ├── board_screen.dart        # Full board: GPS→stops→departures, offline, search
-│   │   └── settings_screen.dart     # Count/language/refresh settings
+│   │   ├── board_screen.dart        # Full board: GPS→stops→departures; offline; search; anti-race token
+│   │   └── settings_screen.dart     # Count/language/refresh; imports version.dart from root
 │   ├── widgets/
-│   │   ├── departure_tile.dart      # Row: badge + destination + countdown + disruption
-│   │   ├── stop_selector.dart       # Dropdown up to 5 nearby stops
-│   │   ├── countdown_chip.dart      # "N min" or pulsing green departing icon
-│   │   └── disruption_badge.dart    # ⚠️ amber + bottom sheet details
+│   │   ├── departure_tile.dart      # Row: badge + destination + countdown + disruption badge
+│   │   ├── stop_selector.dart       # Dropdown ≥2 stops
+│   │   ├── countdown_chip.dart      # "N min" or pulsing green "Now"
+│   │   └── disruption_badge.dart    # amber icon + bottom sheet
 │   └── l10n/
 │       ├── app_de.arb               # 40 strings, complete
-│       ├── app_en.arb               # 40 strings, complete
+│       ├── app_en.arb               # 40 strings, complete (template)
 │       ├── app_fr.arb               # 40 strings, complete
 │       └── app_it.arb               # 40 strings, complete
 ├── test/
-│   ├── models/                      # 9 unit tests (Stop, Departure, Disruption)
-│   └── services/                    # 8 unit tests (TransportApi, DisruptionApi — mocked HTTP)
+│   ├── models/
+│   │   ├── stop_test.dart           # 5 tests: parsing, missing coord, float distance, round-trip, equality
+│   │   └── departure_test.dart      # 7 tests: parsing, no prognosis, past time, estimated>scheduled, empty platform, all API categories, withDisruption
+│   └── services/
+│       └── transport_api_test.dart  # 7 tests: getNearbyStops (200/limit/empty/connectionError), getDepartures (200/empty/timeout)
 └── docs/
-    ├── progress.md                  # All phases ✅
-    ├── changelog.md                 # Full history 0.1.0 → 1.0.0
+    ├── progress.md                  # All phases + API alignment ✅
+    ├── changelog.md                 # 0.1.0 → 1.0.0 → 1.0.1
     ├── decisions.md                 # ADR-001 through ADR-017
-    ├── privacy_policy.md            # GDPR-ready, needs hosting URL
-    ├── play_store_description.md    # EN+DE descriptions + assets checklist
-    └── testing_checklist.md        # Manual QA checklist
+    ├── privacy_policy.md            # GDPR-ready — needs developer name/email + hosting URL
+    ├── play_store_description.md    # EN+DE full descriptions + Play Console assets checklist
+    └── testing_checklist.md         # Manual QA checklist
 ```
 
 ---
@@ -206,7 +212,7 @@ flutter run
 keytool -genkey -v -keystore ~/upload-keystore.jks \
   -keyalg RSA -keysize 2048 -validity 10000 -alias upload
 
-# 2. Fill android/key.properties with real values
+# 2. Fill android/key.properties (already gitignored, template present)
 
 # 3. Build signed AAB
 flutter build appbundle --release \
@@ -217,39 +223,43 @@ flutter build appbundle --release \
 
 ---
 
-## Pre-Publication Checklist (requires human action)
-
-- [ ] Fill `android/key.properties` with real keystore path + passwords
-- [ ] Run `keytool` to generate `~/upload-keystore.jks`
-- [ ] Get opentransportdata.swiss API key (free registration)
-- [ ] Run `flutter analyze && flutter test` in a Flutter SDK environment
-- [ ] Create app icon 1024x1024 -> `assets/icon/icon.png` -> `flutter pub run flutter_launcher_icons`
-- [ ] Capture 2+ Play Store screenshots
-- [ ] Create feature graphic 1024x500 PNG
-- [ ] Host `docs/privacy_policy.md` at a public URL (GitHub Pages, Netlify, etc.)
-- [ ] Fill developer name + email in `docs/privacy_policy.md`
-- [ ] Create Google Play Developer account (one-time $25 USD fee)
-- [ ] Complete Play Console content rating questionnaire (expected: PEGI 3 / Everyone)
-- [ ] Complete Data Safety section (location -> API, no storage beyond local device)
-
----
-
 ## Tests
 
-- **17 unit tests** in `test/models/` and `test/services/`
-- No real network calls — custom `_MockAdapter` for Dio
-- No real GPS — injectable `PositionGetter` in LocationService
-- Run: `flutter test`
+| File | Count | Notes |
+|------|-------|-------|
+| `test/models/stop_test.dart` | 5 | parsing, missing coord, float distance→int, round-trip, equality |
+| `test/models/departure_test.dart` | 7 | all real API categories, empty platform, past time, estimated>scheduled |
+| `test/services/transport_api_test.dart` | 7 | HTTP 200, limit, empty, connection error, timeout |
+| **Total** | **19** | No real network, no real GPS |
+
+Run: `flutter test`
 
 ---
 
-## Known Limitations / Future Work
+## Pre-Publication Checklist (human action required)
 
-- Widget does not render Flutter UI (RemoteViews only) — by design, Android constraint
-- Light theme not implemented (dark only, by ADR-005)
+- [ ] `keytool` — generate `~/upload-keystore.jks`
+- [ ] Fill `android/key.properties` with real paths + passwords
+- [ ] Register at opentransportdata.swiss for free API key
+- [ ] Run `flutter analyze && flutter test` in real Flutter SDK environment
+- [ ] Place app icon at `assets/icon/icon.png` (1024×1024 PNG) → `flutter pub run flutter_launcher_icons`
+- [ ] Capture 2+ Play Store screenshots
+- [ ] Create feature graphic 1024×500 PNG
+- [ ] Host `docs/privacy_policy.md` at public URL; fill developer name + email
+- [ ] Create Google Play Developer account ($25 USD one-time)
+- [ ] Complete Play Console content rating questionnaire (expected: PEGI 3)
+- [ ] Complete Data Safety section (location → API only; no server storage)
+
+---
+
+## Known Limitations
+
+- Widget uses RemoteViews only — no Flutter rendering (Android constraint, by design)
+- Light theme not implemented (ADR-005: dark only)
 - iOS not targeted (Android-only per project spec)
-- Disruption API depends on external API key — degrades silently without it
-- No crash reporting — privacy-first, no analytics by design
+- Disruption API degrades silently without key (empty list shown)
+- No crash reporting (privacy-first, no analytics)
+- Flutter SDK not present in CI — `flutter analyze` and `flutter test` must be run by developer locally
 
 ---
 

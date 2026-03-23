@@ -58,6 +58,17 @@
 - [x] pubspec.yaml: flutter_launcher_icons ^0.13.0 + assets/icon/ config
 - [x] README.md: full project documentation
 
+## Compilation & API Alignment — v1.0.1 ✅
+- [x] `departure.dart`: added missing API category mappings: RE→train, BAT→ship, FUN→cableway, GB→cableway
+- [x] `departure.dart`: normalize empty platform string "" to null in fromStationboardEntry (prevents "Pl. " display)
+- [x] `stop.dart`: `distance` uses `(num?)?.toInt()` instead of `as int?` (handles float from API)
+- [x] `pubspec.yaml`: removed `riverpod_annotation` from runtime deps (manual Riverpod, no codegen)
+- [x] `pubspec.yaml`: removed `riverpod_generator` + `build_runner` from dev_deps (unused)
+- [x] `assets/icon/.gitkeep`: created directory to prevent flutter build asset error
+- [x] `test/models/stop_test.dart`: added test for distance as float (num→int)
+- [x] `test/models/departure_test.dart`: updated category tests to cover all real API values (BUS, BAT, RE, FUN, GB); added empty-platform test
+- [x] `version.dart` + `pubspec.yaml`: bumped to 1.0.1+2
+
 ## Phase 7 — Publish ✅
 - [x] build.gradle: signingConfigs.release from key.properties, fallback to debug, shrinkResources true
 - [x] android/key.properties: template with instructions (gitignored)

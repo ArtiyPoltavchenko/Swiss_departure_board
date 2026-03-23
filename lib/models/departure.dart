@@ -78,13 +78,20 @@ class Departure {
     final line =
         json['number'] as String? ?? json['name'] as String? ?? '';
 
+    // The API returns "" (empty string) for stops without a platform.
+    // Normalise to null so the UI skips the platform sub-label.
+    // Fixed: empty platform string from API showed as "Pl. " in DepartureTile.
+    final rawPlatform = stop['platform'] as String?;
+    final platform =
+        (rawPlatform != null && rawPlatform.isNotEmpty) ? rawPlatform : null;
+
     return Departure(
       line: line,
       destination: json['to'] as String? ?? '',
       scheduledTime: scheduledTime,
       estimatedTime: estimatedTime,
       category: _normaliseCategory(json['category'] as String? ?? ''),
-      platform: stop['platform'] as String?,
+      platform: platform,
       hasDisruption: false,
     );
   }
@@ -101,6 +108,9 @@ class Departure {
       );
 
   static String _normaliseCategory(String raw) {
+    // API returns UPPERCASE values: BUS, T, S, IC, IR, RE, BAT, FUN, GB.
+    // Fixed: RE (RegionalExpress), BAT (boat/ship), FUN (funicular),
+    //        GB (gondola/cable car) were missing → fell through to default.
     switch (raw.toLowerCase()) {
       case 't':
       case 'tram':
@@ -111,15 +121,19 @@ class Departure {
       case 'ic':
       case 'icn':
       case 'ir':
+      case 're':
       case 'ec':
       case 'en':
       case 'nj':
       case 's':
       case 'sn':
         return 'train';
+      case 'bat':
       case 'ship':
       case 'boat':
         return 'ship';
+      case 'fun':
+      case 'gb':
       case 'cableway':
       case 'cable_car':
         return 'cableway';
