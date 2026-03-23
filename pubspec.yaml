@@ -1,7 +1,7 @@
 name: swiss_departure_board
 description: Real-time departure board for Swiss public transport stops.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -14,7 +14,8 @@ dependencies:
     sdk: flutter
   dio: ^5.4.0
   flutter_riverpod: ^2.5.0
-  riverpod_annotation: ^2.3.0
+  # riverpod_annotation removed: app uses manual Riverpod providers,
+  # not @riverpod code generation. Fixed: was incorrectly in runtime deps.
   geolocator: ^11.0.0
   geocoding: ^3.0.0
   shared_preferences: ^2.2.0
@@ -27,10 +28,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  riverpod_generator: ^2.4.0
-  build_runner: ^2.4.0
+  # riverpod_generator and build_runner removed: no @riverpod annotations in
+  # codebase, so code generation is unused. Fixed: prevented pub get warnings.
   mockito: ^5.4.0
-  build_verify: ^3.0.0
   flutter_launcher_icons: ^0.13.0
 
 flutter_launcher_icons:

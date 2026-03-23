@@ -36,7 +36,9 @@ class Stop {
       name: json['name'] as String? ?? '',
       latitude: (coordinate?['x'] as num?)?.toDouble() ?? 0.0,
       longitude: (coordinate?['y'] as num?)?.toDouble() ?? 0.0,
-      distance: json['distance'] as int?,
+      // Fixed: cast via num? then toInt() — API occasionally returns distance
+      // as a floating-point number (e.g. 320.0) which would throw on `as int?`.
+      distance: (json['distance'] as num?)?.toInt(),
     );
   }
 
