@@ -18,7 +18,6 @@ class _MockAdapter implements HttpClientAdapter {
   final bool simulateConnectionError;
 
   _MockAdapter({
-    this.statusCode = 200,
     this.body = '{}',
     this.simulateTimeout = false,
     this.simulateConnectionError = false,

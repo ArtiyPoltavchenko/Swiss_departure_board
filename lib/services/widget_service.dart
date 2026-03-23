@@ -75,10 +75,8 @@ class WidgetService {
     // Fallback: attempt geolocation (may fail in background context).
     try {
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.low,
-          timeLimit: Duration(seconds: 10),
-        ),
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 10),
       );
       final api = TransportApi();
       final stops = await api.getNearbyStops(pos.latitude, pos.longitude, limit: 1);

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:dart.dev)",
+      "Bash(choco --version)",
+      "Bash(choco install:*)",
+      "Bash(dart --version)",
+      "Bash(flutter --version)",
+      "Bash(flutter build:*)",
+      "Bash(flutter --version --machine)",
+      "Read(//usr/lib/**)",
+      "Read(//home/arsup/.local/share/flutter/bin/cache/**)",
+      "Bash(flutter doctor:*)",
+      "Bash(flutter pub:*)",
+      "Bash(cd /tmp)",
+      "Bash(flutter create:*)",
+      "Bash(for d:*)",
+      "Bash(do cp:*)",
+      "Bash(done)"
+    ]
+  }
+}

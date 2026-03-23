@@ -1,6 +1,6 @@
 # Orchestrator Report — Swiss Departure Board
-**Generated:** 2026-03-21
-**Status:** ALL PHASES COMPLETE — ready for Google Play submission
+**Generated:** 2026-03-23
+**Status:** ALL PHASES COMPLETE — debug APK builds successfully; ready for Google Play submission
 
 ---
 
@@ -33,15 +33,16 @@ Native Android app (Flutter/Dart) showing real-time departure boards for the nea
 ## Technology Stack
 
 ```
-Flutter 3.x / Dart (null-safe, strict)
+Flutter 3.29.3 / Dart (null-safe, strict)
 State management  : flutter_riverpod ^2.5.0
 HTTP              : dio ^5.4.0
 Geolocation       : geolocator ^11.0.0 + geocoding ^3.0.0
 Storage           : shared_preferences ^2.2.0
 Widget            : home_widget ^0.6.0
-Background        : workmanager ^0.5.0
+Background        : workmanager ^0.6.0   ← upgraded from 0.5.x (V1 embedding removed)
 Localization      : flutter_localizations + intl ^0.19.0
 Typography        : google_fonts ^6.1.0
+Android build     : Gradle 8.7 + AGP 8.3.2 + Kotlin 1.9.22 + compileSdk 35
 ```
 
 ---
@@ -167,11 +168,35 @@ swiss_departure_board/
 
 ---
 
+## Build Fixes Applied (2026-03-23)
+
+The following blockers were resolved to get the debug APK building on this machine:
+
+| # | Problem | Fix |
+|---|---------|-----|
+| 1 | `android/app/build.gradle` had stray `EOF` heredoc artifact on last line | Removed |
+| 2 | Gradle 8.0 incompatible with Java 21 (class file major version 65) | Gradle wrapper 8.0 → 8.7 |
+| 3 | AGP 8.1 / Kotlin 1.9.10 not tested with Gradle 8.7 | AGP → 8.3.2, Kotlin → 1.9.22 |
+| 4 | `compileSdk 34` — geolocator/path_provider/shared_prefs require SDK 35 | `compileSdk 35` |
+| 5 | `version.dart` at project root, not importable from inside `lib/` | Copied to `lib/version.dart`; import fixed in `settings_screen.dart` |
+| 6 | `geolocator` 11.x removed `locationSettings:` from `getCurrentPosition` | Changed to `desiredAccuracy:` + `timeLimit:` in `location_service.dart` and `widget_service.dart` |
+| 7 | `LocationServiceDisabledException` name clash (geolocator re-exports it; `exceptions.dart` also defines it) | Added `hide LocationServiceDisabledException` on geolocator import in `location_service.dart` and `board_screen.dart` |
+| 8 | Mipmap launcher icons never committed (no `ic_launcher` / `ic_launcher_round`) | Seeded `mipmap-{mdpi…xxxhdpi}` with Flutter default icons |
+| 9 | `workmanager 0.5.2` uses removed V1 Flutter embedding API (`ShimPluginRegistry`, `PluginRegistrantCallback`) | Upgraded to `workmanager 0.6.0` (highest compatible with Flutter 3.29.3) |
+
+---
+
 ## Build Instructions
 
 ### Debug
 ```bash
 flutter pub get
+flutter build apk --debug
+# Output: build/app/outputs/flutter-apk/app-debug.apk  ✅ confirmed working
+```
+
+### Run on device / emulator
+```bash
 flutter run
 ```
 
@@ -231,17 +256,16 @@ flutter build appbundle --release \
 ## Git State
 
 ```
-Branch  : claude/phase-01-skeleton-DQRCd
+Branch  : main  (PR #1 merged from claude/phase-01-skeleton-DQRCd)
 Tag     : v1.0.0 (local)
-Latest  : 69a1f6f  chore: phase 7 complete — release config, privacy policy, Play Store prep
+Latest  : fix: migrate Gradle to 8.7, fix build blockers, debug APK working
 History :
+  (current) fix: migrate Gradle to 8.7, fix build blockers, debug APK working
+  c86b729  Merge pull request #1 from ArtiyPoltavchenko/claude/phase-01-skeleton-DQRCd
+  1c5a535  docs: update orchestrator_report.md — all phases complete, v1.0.0
   69a1f6f  chore: phase 7 complete — release config, privacy policy, Play Store prep
   2077523  feat: phase 6 complete — error handling, caching, README, testing checklist
   27c445a  feat: phase 5 complete — Android home screen widget with WorkManager refresh
-  8b192ec  feat: phase 4 complete — Swiss design, settings, l10n (DE/FR/IT/EN), disruptions
-  0c455fd  feat: phase 3 complete — minimal departure board UI
-  ec4e439  feat: phase 2 complete — core logic, API clients, models, providers, tests
-  eb71938  chore: project skeleton — Flutter structure, dependencies, docs
 ```
 
-All 7 phases committed. Repository is clean.
+All 7 phases committed. Build fixes committed. Repository is clean.

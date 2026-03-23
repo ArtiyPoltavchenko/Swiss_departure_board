@@ -16,6 +16,8 @@ android/local.properties
 android/key.properties
 android/*.keystore
 android/app/release/
+android/app/.cxx/
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 
 # Generated
 *.g.dart

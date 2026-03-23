@@ -1,4 +1,5 @@
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart'
+    hide LocationServiceDisabledException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'exceptions.dart';
@@ -49,12 +50,10 @@ class LocationService {
       final position = await (_positionGetter != null
               ? _positionGetter!()
               : Geolocator.getCurrentPosition(
-                  locationSettings: const LocationSettings(
-                    accuracy: LocationAccuracy.high,
-                    // 5 s timeout — callers fall back to last known stop on
-                    // LocationTimeoutException (e.g. indoor, weak GPS signal).
-                    timeLimit: Duration(seconds: 5),
-                  ),
+                  desiredAccuracy: LocationAccuracy.high,
+                  // 5 s timeout — callers fall back to last known stop on
+                  // LocationTimeoutException (e.g. indoor, weak GPS signal).
+                  timeLimit: const Duration(seconds: 5),
                 ))
           .timeout(
         const Duration(seconds: 5),
