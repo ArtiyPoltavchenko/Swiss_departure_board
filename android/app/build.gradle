@@ -19,7 +19,6 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace 'ch.swissdeparture.swiss_departure_board'
     compileSdk 35
-    ndkVersion flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8

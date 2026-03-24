@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swiss_departure_board/l10n/app_localizations.dart';
 
 /// A small ⚠️ icon shown next to a departure when [hasDisruption] is true.
 ///
