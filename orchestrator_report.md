@@ -11,7 +11,7 @@ Native Android app (Flutter/Dart) showing real-time departure boards for the nea
 - **Package:** `ch.swissdeparture.swiss_departure_board`
 - **Version:** `1.0.1+2` (pubspec.yaml); `lib/version.dart` reads `1.0.1` ✓
 - **Branch:** `main`
-- **Latest commit:** `27fc0d5`
+- **Latest commit:** `df17ca9`
 - **Min Android:** API 26 (Android 8.0)
 - **Languages:** DE / FR / IT / EN (complete)
 
@@ -31,6 +31,7 @@ Native Android app (Flutter/Dart) showing real-time departure boards for the nea
 | — | Compilation & API Alignment | ✅ Done | `a1f5829` |
 | — | Build Fixes (Gradle 8.7, geolocator API) | ✅ Done | `0292382` |
 | — | Flutter 3.41.5 compat (l10n, compileSdk 36, AGP/Kotlin) | ✅ Done | `27fc0d5` |
+| — | compileSdk/targetSdk AGP `=` assignment syntax fix | ✅ Done | `df17ca9` |
 
 ---
 
@@ -197,6 +198,7 @@ The following blockers were resolved to get the debug APK building on this machi
 | 7 | `LocationServiceDisabledException` name clash (geolocator re-exports it; `exceptions.dart` also defines it) | Added `hide LocationServiceDisabledException` on geolocator import in `location_service.dart` and `board_screen.dart` |
 | 8 | Mipmap launcher icons never committed (no `ic_launcher` / `ic_launcher_round`) | Seeded `mipmap-{mdpi…xxxhdpi}` with Flutter default icons |
 | 9 | `workmanager 0.5.2` uses removed V1 Flutter embedding API (`ShimPluginRegistry`, `PluginRegistrantCallback`) | Upgraded to `workmanager 0.6.0` (highest compatible with Flutter 3.29.3) |
+| 10 | `compileSdk 36` (without `=`) silently overridden back to 35 by Flutter Gradle plugin | Changed to `compileSdk = 36` + `targetSdk = 36` (AGP 8.6 assignment syntax; plugin respects `=` form) |
 
 ---
 
@@ -293,8 +295,10 @@ Run: `flutter test`
 ```
 Branch  : main
 Tag     : (none)
-Latest  : 27fc0d5  fix: Flutter 3.41.5 compat — l10n, compileSdk 36, AGP/Kotlin bump
+Latest  : df17ca9  fix: compileSdk = 36, targetSdk = 36 (AGP assignment syntax)
 History :
+  df17ca9  fix: compileSdk = 36, targetSdk = 36 (AGP assignment syntax)
+  9066365  docs: update orchestrator_report.md — Flutter 3.41.5 compat
   27fc0d5  fix: Flutter 3.41.5 compat — l10n, compileSdk 36, AGP/Kotlin bump
   1ea3c0b  fix: resolve merge conflicts
   5fa8bd9  Merge branch 'main' of github.com:ArtiyPoltavchenko/Swiss_departure_board
