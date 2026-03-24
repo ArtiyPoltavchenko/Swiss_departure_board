@@ -53,5 +53,6 @@
   "searchStopTitle": "Search for a stop",
   "searchStopHint": "Search...",
   "noSearchResults": "No stops found",
-  "usingLastLocation": "Using last known location"
+  "usingLastLocation": "Using last known location",
+  "noUpcomingDepartures": "No upcoming departures"
 }

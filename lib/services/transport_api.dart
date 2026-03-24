@@ -133,6 +133,13 @@ class TransportApi {
     }
   }
 
+  /// Quick check: does this stop have any departures in the next 60 minutes?
+  /// Returns true/false without fetching full board.
+  Future<bool> hasUpcomingDepartures(String stationId) async {
+    final departures = await getDepartures(stationId, limit: 1);
+    return departures.isNotEmpty && departures.first.minutesUntil <= 60;
+  }
+
   /// Maps a [DioException] to the appropriate [AppException] and throws it.
   Never _mapDioException(DioException e) {
     switch (e.type) {

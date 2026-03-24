@@ -305,6 +305,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Using last known location'**
   String get usingLastLocation;
+
+  /// No description provided for @noUpcomingDepartures.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming departures'**
+  String get noUpcomingDepartures;
 }
 
 class _AppLocalizationsDelegate

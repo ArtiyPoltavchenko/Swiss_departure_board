@@ -118,4 +118,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usingLastLocation => 'Using last known location';
+
+  @override
+  String get noUpcomingDepartures => 'No upcoming departures';
 }

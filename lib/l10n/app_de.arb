@@ -53,5 +53,6 @@
   "searchStopTitle": "Haltestelle suchen",
   "searchStopHint": "Suchen...",
   "noSearchResults": "Keine Haltestellen gefunden",
-  "usingLastLocation": "Letzten bekannten Standort verwendet"
+  "usingLastLocation": "Letzten bekannten Standort verwendet",
+  "noUpcomingDepartures": "Keine nächsten Abfahrten"
 }

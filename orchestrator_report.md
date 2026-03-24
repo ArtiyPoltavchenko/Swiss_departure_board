@@ -1,6 +1,6 @@
 # Orchestrator Report — Swiss Departure Board
-**Generated:** 2026-03-24 (updated)
-**Status:** ALL PHASES COMPLETE — debug APK builds successfully; ready for Google Play submission
+**Generated:** 2026-03-24 (updated — phase 8 complete)
+**Status:** PHASE 8 COMPLETE — smart stop selection, persistent search button, empty-state UI
 
 ---
 
@@ -32,6 +32,7 @@ Native Android app (Flutter/Dart) showing real-time departure boards for the nea
 | — | Build Fixes (Gradle 8.7, geolocator API) | ✅ Done | `0292382` |
 | — | Flutter 3.41.5 compat (l10n, compileSdk 36, AGP/Kotlin) | ✅ Done | `27fc0d5` |
 | — | compileSdk/targetSdk AGP `=` assignment syntax fix | ✅ Done | `df17ca9` |
+| 8 | UX Foundations — smart stop selection, persistent search button | ✅ Done | pending |
 
 ---
 
@@ -84,7 +85,7 @@ swiss_departure_board/
 │   ├── services/
 │   │   ├── exceptions.dart          # AppException + 7 typed subclasses
 │   │   ├── location_service.dart    # Injectable PositionGetter, getLastKnownPosition, 5s timeout
-│   │   ├── transport_api.dart       # getNearbyStops (x=lat,y=lng), getDepartures (15s cache), searchStops
+│   │   ├── transport_api.dart       # getNearbyStops, getDepartures (15s cache), searchStops, hasUpcomingDepartures
 │   │   ├── disruption_api.dart      # getDisruptions; key via String.fromEnvironment('DISRUPTION_API_KEY')
 │   │   ├── preferences.dart         # SharedPreferences wrapper (stop, count, locale, interval)
 │   │   └── widget_service.dart      # Static BG-safe: fetch 4 deps + write SP + updateWidget
@@ -93,18 +94,18 @@ swiss_departure_board/
 │   │   ├── departures_provider.dart # FutureProvider.family<List<Departure>, String>
 │   │   └── settings_provider.dart   # SettingsNotifier (count, locale, refreshIntervalSeconds)
 │   ├── screens/
-│   │   ├── board_screen.dart        # Full board: GPS→stops→departures; offline; search; anti-race token
+│   │   ├── board_screen.dart        # Full board: GPS→smart stop selection→departures; offline; search overlay; anti-race token
 │   │   └── settings_screen.dart     # Count/language/refresh; imports lib/version.dart
 │   ├── widgets/
 │   │   ├── departure_tile.dart      # Row: badge + destination + countdown + disruption badge
-│   │   ├── stop_selector.dart       # Dropdown ≥2 stops
+│   │   ├── stop_selector.dart       # Dropdown ≥2 stops + persistent search button
 │   │   ├── countdown_chip.dart      # "N min" or pulsing green "Now"
 │   │   └── disruption_badge.dart    # amber icon + bottom sheet
 │   └── l10n/
-│       ├── app_de.arb               # 40 strings, complete
-│       ├── app_en.arb               # 40 strings, complete (template)
-│       ├── app_fr.arb               # 40 strings, complete
-│       ├── app_it.arb               # 40 strings, complete
+│       ├── app_de.arb               # 41 strings, complete
+│       ├── app_en.arb               # 41 strings, complete (template)
+│       ├── app_fr.arb               # 41 strings, complete
+│       ├── app_it.arb               # 41 strings, complete
 │       ├── app_localizations.dart   # generated — do not edit
 │       ├── app_localizations_de.dart
 │       ├── app_localizations_en.dart
@@ -162,12 +163,15 @@ swiss_departure_board/
 
 ### Main App
 - GPS-based nearest stop detection (5s timeout → last-known GPS → last saved stop)
+- **Smart stop selection**: parallel peek (limit=1) on all nearby stops → selects nearest with upcoming departures
 - Stop selector: up to 5 closest stops, one tap to switch
 - Real-time departure board with prognosis (delay) data
 - Auto-refresh (configurable: 15 / 30 / 60 / 120 s)
 - Pull-to-refresh (bypasses 15s API cache)
 - Offline mode: disk-cached departures + amber offline banner
+- **Persistent search button** (🔍) next to stop selector — always visible; opens search overlay with back button
 - Manual stop search by name (300ms debounce)
+- **No upcoming departures** empty state: `Icons.schedule` icon + localized message (was blank screen)
 - Service disruption badges with bottom-sheet detail
 - Settings: departure count (5/10/15/20), language, refresh interval
 - Last stop persisted across app restarts

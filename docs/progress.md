@@ -69,6 +69,14 @@
 - [x] `test/models/departure_test.dart`: updated category tests to cover all real API values (BUS, BAT, RE, FUN, GB); added empty-platform test
 - [x] `version.dart` + `pubspec.yaml`: bumped to 1.0.1+2
 
+## Phase 8 — UX Foundations ✅
+- [x] `transport_api.dart`: `hasUpcomingDepartures(stationId)` — limit=1 peek, returns bool
+- [x] `board_screen.dart`: smart stop selection — parallel `Future.wait` peek on all nearby stops; selects nearest with upcoming departures; falls back to nearest if all empty
+- [x] `stop_selector.dart`: persistent search button (🔍) always visible to the right of the dropdown/stop name; fires `onSearchPressed` callback
+- [x] `board_screen.dart`: search overlay — `_showingSearch` bool; back button returns to board; selected stop added to `_nearbyStops` if not already present
+- [x] `board_screen.dart`: empty departure state — `Icons.schedule` icon + localized "No upcoming departures" (replaces blank list)
+- [x] ARB files (all 4 + generated .dart): `noUpcomingDepartures` — DE/FR/IT/EN
+
 ## Phase 7 — Publish ✅
 - [x] build.gradle: signingConfigs.release from key.properties, fallback to debug, shrinkResources true
 - [x] android/key.properties: template with instructions (gitignored)

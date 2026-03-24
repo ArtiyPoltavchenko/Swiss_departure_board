@@ -53,5 +53,6 @@
   "searchStopTitle": "Rechercher un arrêt",
   "searchStopHint": "Rechercher...",
   "noSearchResults": "Aucun arrêt trouvé",
-  "usingLastLocation": "Utilisation de la dernière position connue"
+  "usingLastLocation": "Utilisation de la dernière position connue",
+  "noUpcomingDepartures": "Aucun prochain départ"
 }

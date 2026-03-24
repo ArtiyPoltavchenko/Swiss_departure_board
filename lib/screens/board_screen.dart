@@ -38,6 +38,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   bool _isPermissionError = false;
   bool _isLocationError = false;
 
+  /// True when the search overlay is shown over the main board.
+  bool _showingSearch = false;
+
   /// True when displaying stale departures from disk cache (no network).
   bool _isOffline = false;
 
@@ -162,7 +165,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     }
   }
 
-  /// Shared helper: given a GPS fix, find nearby stops and load departures.
+  /// Shared helper: given a GPS fix, find nearby stops and smart-select the
+  /// nearest one that has upcoming departures.
   Future<void> _loadStopsAndDepartures(double lat, double lng) async {
     final api = ref.read(transportApiProvider);
     final stops = await api.getNearbyStops(lat, lng);
@@ -178,11 +182,32 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       return;
     }
 
+    // Check all stops in parallel for upcoming departures (limit=1 peek).
+    final peekResults = await Future.wait(
+      stops.map(
+        (s) => api.hasUpcomingDepartures(s.id).catchError((_) => false),
+      ),
+    );
+
+    if (!mounted) return;
+
+    // Prefer last saved stop if it has departures, else first stop with
+    // departures, else fall back to the nearest stop.
     final lastStop = await ref.read(stopProvider.notifier).loadLastStop();
-    final initial =
-        (lastStop != null && stops.any((s) => s.id == lastStop.id))
-            ? stops.firstWhere((s) => s.id == lastStop.id)
-            : stops.first;
+
+    Stop initial;
+    if (lastStop != null) {
+      final savedIdx = stops.indexWhere((s) => s.id == lastStop.id);
+      if (savedIdx >= 0 && peekResults[savedIdx]) {
+        initial = stops[savedIdx];
+      } else {
+        final activeIdx = peekResults.indexWhere((has) => has);
+        initial = activeIdx >= 0 ? stops[activeIdx] : stops.first;
+      }
+    } else {
+      final activeIdx = peekResults.indexWhere((has) => has);
+      initial = activeIdx >= 0 ? stops[activeIdx] : stops.first;
+    }
 
     if (!mounted) return;
     setState(() {
@@ -191,7 +216,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       _loading = false;
     });
 
-    await _loadDepartures();
+    // Force-refresh so the full board is fetched (peek only cached limit=1).
+    await _loadDepartures(forceRefresh: true);
     _startAutoRefresh();
   }
 
@@ -413,11 +439,36 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
       );
     }
 
+    // Search overlay — shown when user taps the search button.
+    if (_showingSearch) {
+      return _StopSearchView(
+        message: '',
+        api: ref.read(transportApiProvider),
+        showPermissionSection: false,
+        onClose: () => setState(() => _showingSearch = false),
+        onStopSelected: (stop) {
+          // Add the searched stop to the list if not already present.
+          final updated = List<Stop>.from(_nearbyStops);
+          if (!updated.any((s) => s.id == stop.id)) updated.insert(0, stop);
+          setState(() {
+            _nearbyStops = updated;
+            _selectedStop = stop;
+            _showingSearch = false;
+            _isOffline = false;
+          });
+          ref.read(stopProvider.notifier).saveLastStop(stop);
+          _loadDepartures(forceRefresh: true);
+          _startAutoRefresh();
+        },
+      );
+    }
+
     if (_isPermissionError) {
       // Offer both "Open Settings" and a manual stop search as fallback.
       return _StopSearchView(
         message: _errorMessage ?? '',
         api: ref.read(transportApiProvider),
+        showPermissionSection: true,
         onStopSelected: (stop) {
           setState(() {
             _nearbyStops = [stop];
@@ -487,7 +538,7 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
     return Container(
       color: const Color(0xFF16213e),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 10, 8, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -495,22 +546,8 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
             stops: _nearbyStops,
             selectedStop: stop,
             onStopSelected: _onStopSelected,
+            onSearchPressed: () => setState(() => _showingSearch = true),
           ),
-          if (_nearbyStops.length < 2)
-            Tooltip(
-              message: stop.name,
-              child: Text(
-                stop.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ),
           if (secondsAgo != null)
             Padding(
               padding: const EdgeInsets.only(top: 2),
@@ -532,11 +569,23 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           Padding(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 32),
             child: Center(
-              child: Text(
-                l10n?.noDepartures ?? 'No departures available.',
-                style: const TextStyle(color: Colors.white54),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.schedule,
+                    size: 48,
+                    color: Colors.white24,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n?.noUpcomingDepartures ?? 'No upcoming departures',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white54),
+                  ),
+                ],
               ),
             ),
           ),
@@ -613,18 +662,30 @@ class _OfflineBanner extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Stop search view — shown when location permission is denied
+// Stop search view
 // ---------------------------------------------------------------------------
 
 class _StopSearchView extends StatefulWidget {
+  /// Error/info message shown at the top when [showPermissionSection] is true.
   final String message;
   final TransportApi api;
   final void Function(Stop stop) onStopSelected;
+
+  /// When true, shows the location-permission error section with an
+  /// "Open Settings" button. Set to false when used as a search overlay.
+  final bool showPermissionSection;
+
+  /// Called when the user taps the back/close button. When null, no close
+  /// button is shown (e.g. permission-denied flow where there is no board
+  /// to return to).
+  final VoidCallback? onClose;
 
   const _StopSearchView({
     required this.message,
     required this.api,
     required this.onStopSelected,
+    this.showPermissionSection = true,
+    this.onClose,
   });
 
   @override
@@ -669,39 +730,54 @@ class _StopSearchViewState extends State<_StopSearchView> {
 
     return Column(
       children: [
-        // Permission error section
         Container(
           color: const Color(0xFF16213e),
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
           child: Column(
             children: [
-              const Icon(
-                Icons.location_off_outlined,
-                size: 40,
-                color: Colors.white38,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                widget.message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: Geolocator.openAppSettings,
-                icon: const Icon(Icons.settings_outlined, size: 16),
-                label: Text(l10n?.openSettings ?? 'Open Settings'),
-              ),
-              const Divider(color: Colors.white24, height: 28),
-              Text(
-                l10n?.searchStopTitle ?? 'Search for a stop',
-                style: const TextStyle(color: Colors.white54, fontSize: 13),
-              ),
-              const SizedBox(height: 8),
+              // Close button row — shown when an onClose callback is provided.
+              if (widget.onClose != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                    onPressed: widget.onClose,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ),
+              // Permission error section — only for the location-denied flow.
+              if (widget.showPermissionSection) ...[
+                const SizedBox(height: 8),
+                const Icon(
+                  Icons.location_off_outlined,
+                  size: 40,
+                  color: Colors.white38,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  widget.message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: Geolocator.openAppSettings,
+                  icon: const Icon(Icons.settings_outlined, size: 16),
+                  label: Text(l10n?.openSettings ?? 'Open Settings'),
+                ),
+                const Divider(color: Colors.white24, height: 28),
+                Text(
+                  l10n?.searchStopTitle ?? 'Search for a stop',
+                  style: const TextStyle(color: Colors.white54, fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+              ] else
+                const SizedBox(height: 4),
               TextField(
                 controller: _controller,
                 onChanged: _onQueryChanged,
-                autofocus: false,
+                autofocus: true,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: l10n?.searchStopHint ?? 'Search...',

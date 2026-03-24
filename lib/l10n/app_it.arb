@@ -53,5 +53,6 @@
   "searchStopTitle": "Cerca una fermata",
   "searchStopHint": "Cerca...",
   "noSearchResults": "Nessuna fermata trovata",
-  "usingLastLocation": "Utilizzo dell'ultima posizione nota"
+  "usingLastLocation": "Utilizzo dell'ultima posizione nota",
+  "noUpcomingDepartures": "Nessuna prossima partenza"
 }
