@@ -32,7 +32,7 @@ Native Android app (Flutter/Dart) showing real-time departure boards for the nea
 | — | Build Fixes (Gradle 8.7, geolocator API) | ✅ Done | `0292382` |
 | — | Flutter 3.41.5 compat (l10n, compileSdk 36, AGP/Kotlin) | ✅ Done | `27fc0d5` |
 | — | compileSdk/targetSdk AGP `=` assignment syntax fix | ✅ Done | `df17ca9` |
-| 8 | UX Foundations — smart stop selection, persistent search button | ✅ Done | pending |
+| 8 | UX Foundations — smart stop selection, persistent search button | ✅ Done | `0af59cb` |
 
 ---
 
