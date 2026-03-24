@@ -1,5 +1,5 @@
 # Orchestrator Report — Swiss Departure Board
-**Generated:** 2026-03-23
+**Generated:** 2026-03-24
 **Status:** ALL PHASES COMPLETE — debug APK builds successfully; ready for Google Play submission
 
 ---
@@ -9,9 +9,9 @@
 Native Android app (Flutter/Dart) showing real-time departure boards for the nearest Swiss public transport stop. Digital replica of physical station displays. No route planning, no accounts, no ads.
 
 - **Package:** `ch.swissdeparture.swiss_departure_board`
-- **Version:** `1.0.1+2`
-- **Branch:** `claude/phase-01-skeleton-DQRCd`
-- **Latest commit:** `a1f5829`
+- **Version:** `1.0.1+2` (pubspec.yaml); `lib/version.dart` still reads `1.0.0` — minor drift, no runtime impact
+- **Branch:** `main`
+- **Latest commit:** `5fa8bd9`
 - **Min Android:** API 26 (Android 8.0)
 - **Languages:** DE / FR / IT / EN (complete)
 
@@ -29,6 +29,7 @@ Native Android app (Flutter/Dart) showing real-time departure boards for the nea
 | 6 | Polish | ✅ Done | `2077523` |
 | 7 | Publish / Play Store Prep | ✅ Done | `69a1f6f` |
 | — | Compilation & API Alignment | ✅ Done | `a1f5829` |
+| — | Build Fixes (Gradle 8.7, geolocator API) | ✅ Done | `0292382` |
 
 ---
 
@@ -53,7 +54,7 @@ Android build     : Gradle 8.7 + AGP 8.3.2 + Kotlin 1.9.22 + compileSdk 35
 
 ```
 swiss_departure_board/
-├── version.dart                     # 1.0.1
+├── version.dart                     # 1.0.0 (root copy, kept for reference)
 ├── pubspec.yaml                     # 1.0.1+2, cleaned deps
 ├── assets/icon/.gitkeep             # placeholder (icon.png must be added before release)
 ├── android/
@@ -78,6 +79,7 @@ swiss_departure_board/
 │   │   ├── stop.dart                # Stop(id, name, lat, lon) + fromJson; distance via num?.toInt()
 │   │   ├── departure.dart           # Departure + fromStationboardEntry; full category mapping; empty platform → null
 │   │   └── disruption.dart          # Disruption + fromJson
+│   ├── version.dart                 # 1.0.0 (copy in lib/; added so settings_screen.dart can import it)
 │   ├── services/
 │   │   ├── exceptions.dart          # AppException + 7 typed subclasses
 │   │   ├── location_service.dart    # Injectable PositionGetter, getLastKnownPosition, 5s timeout
@@ -91,7 +93,7 @@ swiss_departure_board/
 │   │   └── settings_provider.dart   # SettingsNotifier (count, locale, refreshIntervalSeconds)
 │   ├── screens/
 │   │   ├── board_screen.dart        # Full board: GPS→stops→departures; offline; search; anti-race token
-│   │   └── settings_screen.dart     # Count/language/refresh; imports version.dart from root
+│   │   └── settings_screen.dart     # Count/language/refresh; imports lib/version.dart
 │   ├── widgets/
 │   │   ├── departure_tile.dart      # Row: badge + destination + countdown + disruption badge
 │   │   ├── stop_selector.dart       # Dropdown ≥2 stops
@@ -107,6 +109,7 @@ swiss_departure_board/
 │   │   ├── stop_test.dart           # 5 tests: parsing, missing coord, float distance, round-trip, equality
 │   │   └── departure_test.dart      # 7 tests: parsing, no prognosis, past time, estimated>scheduled, empty platform, all API categories, withDisruption
 │   └── services/
+│       ├── location_service_test.dart # 3 tests: inject position getter, propagate timeout/permission exceptions
 │       └── transport_api_test.dart  # 7 tests: getNearbyStops (200/limit/empty/connectionError), getDepartures (200/empty/timeout)
 └── docs/
     ├── progress.md                  # All phases + API alignment ✅
@@ -229,8 +232,9 @@ flutter build appbundle --release \
 |------|-------|-------|
 | `test/models/stop_test.dart` | 5 | parsing, missing coord, float distance→int, round-trip, equality |
 | `test/models/departure_test.dart` | 7 | all real API categories, empty platform, past time, estimated>scheduled |
+| `test/services/location_service_test.dart` | 3 | inject fake position, propagate timeout + permission exceptions |
 | `test/services/transport_api_test.dart` | 7 | HTTP 200, limit, empty, connection error, timeout |
-| **Total** | **19** | No real network, no real GPS |
+| **Total** | **22** | No real network, no real GPS |
 
 Run: `flutter test`
 
@@ -266,16 +270,16 @@ Run: `flutter test`
 ## Git State
 
 ```
-Branch  : main  (PR #1 merged from claude/phase-01-skeleton-DQRCd)
-Tag     : v1.0.0 (local)
-Latest  : fix: migrate Gradle to 8.7, fix build blockers, debug APK working
+Branch  : main  (PR #1 + PR #2 merged; 1 commit ahead of origin/main after build fixes)
+Tag     : (none — v1.0.0 local tag was lost after merge)
+Latest  : 5fa8bd9  Merge branch 'main' of github.com:ArtiyPoltavchenko/Swiss_departure_board
 History :
-  (current) fix: migrate Gradle to 8.7, fix build blockers, debug APK working
+  5fa8bd9  Merge branch 'main' of github.com:ArtiyPoltavchenko/Swiss_departure_board
+  b9851cc  Merge pull request #2 from ArtiyPoltavchenko/claude/api-alignment-DQRCd
+  0292382  fix: migrate Gradle to 8.7, fix build blockers, debug APK working
+  f2f5f9b  docs: update orchestrator_report.md — v1.0.1, API alignment complete
+  a1f5829  fix: API contract alignment — category mapping, platform normalization, dep cleanup
   c86b729  Merge pull request #1 from ArtiyPoltavchenko/claude/phase-01-skeleton-DQRCd
-  1c5a535  docs: update orchestrator_report.md — all phases complete, v1.0.0
-  69a1f6f  chore: phase 7 complete — release config, privacy policy, Play Store prep
-  2077523  feat: phase 6 complete — error handling, caching, README, testing checklist
-  27c445a  feat: phase 5 complete — Android home screen widget with WorkManager refresh
 ```
 
-All 7 phases committed. Build fixes committed. Repository is clean.
+All 7 phases + API alignment + build fixes committed. Working tree clean after this commit.
