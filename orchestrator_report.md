@@ -1,5 +1,5 @@
 # Orchestrator Report — Swiss Departure Board
-**Generated:** 2026-03-24
+**Generated:** 2026-03-24 (updated)
 **Status:** ALL PHASES COMPLETE — debug APK builds successfully; ready for Google Play submission
 
 ---
@@ -9,9 +9,9 @@
 Native Android app (Flutter/Dart) showing real-time departure boards for the nearest Swiss public transport stop. Digital replica of physical station displays. No route planning, no accounts, no ads.
 
 - **Package:** `ch.swissdeparture.swiss_departure_board`
-- **Version:** `1.0.1+2` (pubspec.yaml); `lib/version.dart` still reads `1.0.0` — minor drift, no runtime impact
+- **Version:** `1.0.1+2` (pubspec.yaml); `lib/version.dart` reads `1.0.1` ✓
 - **Branch:** `main`
-- **Latest commit:** `5fa8bd9`
+- **Latest commit:** `27fc0d5`
 - **Min Android:** API 26 (Android 8.0)
 - **Languages:** DE / FR / IT / EN (complete)
 
@@ -30,22 +30,23 @@ Native Android app (Flutter/Dart) showing real-time departure boards for the nea
 | 7 | Publish / Play Store Prep | ✅ Done | `69a1f6f` |
 | — | Compilation & API Alignment | ✅ Done | `a1f5829` |
 | — | Build Fixes (Gradle 8.7, geolocator API) | ✅ Done | `0292382` |
+| — | Flutter 3.41.5 compat (l10n, compileSdk 36, AGP/Kotlin) | ✅ Done | `27fc0d5` |
 
 ---
 
 ## Technology Stack
 
 ```
-Flutter 3.29.3 / Dart (null-safe, strict)
+Flutter 3.41.5 / Dart (null-safe, strict)
 State management  : flutter_riverpod ^2.5.0
 HTTP              : dio ^5.4.0
 Geolocation       : geolocator ^11.0.0 + geocoding ^3.0.0
 Storage           : shared_preferences ^2.2.0
 Widget            : home_widget ^0.6.0
-Background        : workmanager ^0.6.0   ← upgraded from 0.5.x (V1 embedding removed)
-Localization      : flutter_localizations + intl ^0.19.0
+Background        : workmanager ^0.6.0
+Localization      : flutter_localizations + intl 0.20.2
 Typography        : google_fonts ^6.1.0
-Android build     : Gradle 8.7 + AGP 8.3.2 + Kotlin 1.9.22 + compileSdk 35
+Android build     : Gradle 8.7 + AGP 8.6.0 + Kotlin 2.1.0 + compileSdk 36
 ```
 
 ---
@@ -54,7 +55,6 @@ Android build     : Gradle 8.7 + AGP 8.3.2 + Kotlin 1.9.22 + compileSdk 35
 
 ```
 swiss_departure_board/
-├── version.dart                     # 1.0.0 (root copy, kept for reference)
 ├── pubspec.yaml                     # 1.0.1+2, cleaned deps
 ├── assets/icon/.gitkeep             # placeholder (icon.png must be added before release)
 ├── android/
@@ -79,7 +79,7 @@ swiss_departure_board/
 │   │   ├── stop.dart                # Stop(id, name, lat, lon) + fromJson; distance via num?.toInt()
 │   │   ├── departure.dart           # Departure + fromStationboardEntry; full category mapping; empty platform → null
 │   │   └── disruption.dart          # Disruption + fromJson
-│   ├── version.dart                 # 1.0.0 (copy in lib/; added so settings_screen.dart can import it)
+│   ├── version.dart                 # 1.0.1 (in lib/; imported by settings_screen.dart)
 │   ├── services/
 │   │   ├── exceptions.dart          # AppException + 7 typed subclasses
 │   │   ├── location_service.dart    # Injectable PositionGetter, getLastKnownPosition, 5s timeout
@@ -103,7 +103,12 @@ swiss_departure_board/
 │       ├── app_de.arb               # 40 strings, complete
 │       ├── app_en.arb               # 40 strings, complete (template)
 │       ├── app_fr.arb               # 40 strings, complete
-│       └── app_it.arb               # 40 strings, complete
+│       ├── app_it.arb               # 40 strings, complete
+│       ├── app_localizations.dart   # generated — do not edit
+│       ├── app_localizations_de.dart
+│       ├── app_localizations_en.dart
+│       ├── app_localizations_fr.dart
+│       └── app_localizations_it.dart
 ├── test/
 │   ├── models/
 │   │   ├── stop_test.dart           # 5 tests: parsing, missing coord, float distance, round-trip, equality
@@ -195,6 +200,22 @@ The following blockers were resolved to get the debug APK building on this machi
 
 ---
 
+## Flutter 3.41.5 Upgrade Fixes (2026-03-24)
+
+| # | Problem | Fix |
+|---|---------|-----|
+| 1 | `flutter_gen` synthetic package removed — `package:flutter_gen/gen_l10n/...` import path broken | `l10n.yaml`: `synthetic-package: false` (deprecated, removed again); import path → `package:swiss_departure_board/l10n/app_localizations.dart` in 5 files |
+| 2 | Plugins (geolocator_android, path_provider_android, shared_preferences_android) require compileSdk 36 | `compileSdk 35` → `compileSdk 36` in `android/app/build.gradle` |
+| 3 | AGP 8.3.2 not compatible with Flutter 3.41.5 toolchain | AGP `8.3.2` → `8.6.0` in `android/settings.gradle` |
+| 4 | Kotlin 1.9.22 incompatible with AGP 8.6.0 | Kotlin `1.9.22` → `2.1.0` in `android/settings.gradle` |
+| 5 | `intl ^0.19.0` incompatible with Flutter 3.41.5 intl constraints | `intl: ^0.19.0` → `intl: 0.20.2` in `pubspec.yaml` |
+| 6 | Root `version.dart` dead file (never imported) | Deleted; `lib/version.dart` is the canonical copy |
+| 7 | `lib/version.dart` showed `1.0.0` while `pubspec.yaml` was `1.0.1+2` | Bumped to `1.0.1` |
+
+Generated l10n files now live in `lib/l10n/` (committed to repo alongside ARB files).
+
+---
+
 ## Build Instructions
 
 ### Debug
@@ -270,16 +291,16 @@ Run: `flutter test`
 ## Git State
 
 ```
-Branch  : main  (PR #1 + PR #2 merged; 1 commit ahead of origin/main after build fixes)
-Tag     : (none — v1.0.0 local tag was lost after merge)
-Latest  : 5fa8bd9  Merge branch 'main' of github.com:ArtiyPoltavchenko/Swiss_departure_board
+Branch  : main
+Tag     : (none)
+Latest  : 27fc0d5  fix: Flutter 3.41.5 compat — l10n, compileSdk 36, AGP/Kotlin bump
 History :
+  27fc0d5  fix: Flutter 3.41.5 compat — l10n, compileSdk 36, AGP/Kotlin bump
+  1ea3c0b  fix: resolve merge conflicts
   5fa8bd9  Merge branch 'main' of github.com:ArtiyPoltavchenko/Swiss_departure_board
   b9851cc  Merge pull request #2 from ArtiyPoltavchenko/claude/api-alignment-DQRCd
   0292382  fix: migrate Gradle to 8.7, fix build blockers, debug APK working
-  f2f5f9b  docs: update orchestrator_report.md — v1.0.1, API alignment complete
   a1f5829  fix: API contract alignment — category mapping, platform normalization, dep cleanup
-  c86b729  Merge pull request #1 from ArtiyPoltavchenko/claude/phase-01-skeleton-DQRCd
 ```
 
-All 7 phases + API alignment + build fixes committed. Working tree clean after this commit.
+All 7 phases + API alignment + build fixes + Flutter 3.41.5 compat committed. Working tree clean.
