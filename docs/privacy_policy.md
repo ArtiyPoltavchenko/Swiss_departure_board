@@ -90,8 +90,8 @@ same URL with a new "Last updated" date.
 
 For questions about this privacy policy:
 
-**Developer:** [Your Name / Organisation]
-**Email:** [your-email@example.com]
+**Developer:** [Arsentii Poltavchenko]
+**Email:** [poltavchenko.artiy@gmail.com]
 
 ---
 
